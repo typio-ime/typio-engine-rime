@@ -36,8 +36,8 @@
 /* Mode construction from live RimeStatus                                     */
 /* -------------------------------------------------------------------------- */
 
-static void rime_fill_mode(TypioRimeState *state, RimeSessionId session_id,
-                           TypioRimeModeBuf *buf) {
+static void rime_fill_status(TypioRimeState *state, RimeSessionId session_id,
+                             TypioRimeStatusBuf *buf) {
     bool ascii = false;
 
     buf->profile_id[0] = '\0';
@@ -67,11 +67,11 @@ static void rime_fill_mode(TypioRimeState *state, RimeSessionId session_id,
     snprintf(buf->display_label, sizeof(buf->display_label),
              "%s", ascii ? "A" : "中");
 
-    buf->mode.engagement = ascii ? TYPIO_ENGAGE_PASSTHROUGH : TYPIO_ENGAGE_ACTIVE;
-    buf->mode.profile_id = buf->profile_id;
-    buf->mode.profile_label = buf->profile_label[0] ? buf->profile_label : nullptr;
-    buf->mode.display_label = buf->display_label;
-    buf->mode.icon_name = buf->icon;
+    buf->status.engagement = ascii ? TYPIO_ENGAGE_PASSTHROUGH : TYPIO_ENGAGE_ACTIVE;
+    buf->status.profile_id = buf->profile_id;
+    buf->status.profile_label = buf->profile_label;
+    buf->status.display_label = buf->display_label;
+    buf->status.icon_name = buf->icon;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -108,7 +108,7 @@ static void rime_writeback_schema(TypioEngine *engine, const char *schema_id) {
 
 void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id) {
     TypioRimeState *state;
-    TypioRimeModeBuf buf;
+    TypioRimeStatusBuf buf;
 
     if (!engine || !engine->instance) {
         return;
@@ -118,43 +118,43 @@ void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id) {
         return;
     }
 
-    rime_fill_mode(state, session_id, &buf);
-    typio_instance_notify_status(engine->instance, &buf.mode);
+    rime_fill_status(state, session_id, &buf);
+    typio_instance_notify_status(engine->instance, &buf.status);
     rime_writeback_schema(engine, buf.profile_id);
 }
 
 /* Fallback used before any session/status exists. */
-static const TypioEngineStatus typio_rime_default_mode = {
+static const TypioEngineStatus typio_rime_default_status = {
     .engagement = TYPIO_ENGAGE_ACTIVE,
     .profile_id = "",
-    .profile_label = nullptr,
+    .profile_label = NULL,
     .display_label = "中",
     .icon_name = "typio-rime-symbolic",
 };
 
 const TypioEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
-                                            TypioInputContext *ctx) {
+                                                TypioInputContext *ctx) {
     TypioEngine *base = (TypioEngine *)engine;
     TypioRimeState *state = typio_engine_get_user_data(base);
     TypioRimeSession *session = typio_rime_get_session(base, ctx, false);
 
     if (!session || !state || !state->api) {
-        return &typio_rime_default_mode;
+        return &typio_rime_default_status;
     }
 
     /* Build into session-owned storage so the returned pointer stays valid
      * until the next engine operation on this context. */
-    rime_fill_mode(state, session->session_id, &session->modebuf);
-    return &session->modebuf.mode;
+    rime_fill_status(state, session->session_id, &session->statusbuf);
+    return &session->statusbuf.status;
 }
 
 TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
-                                 TypioInputContext *ctx,
-                                 const char *profile_id) {
+                                   TypioInputContext *ctx,
+                                   const char *mode_id) {
     TypioEngine *base = (TypioEngine *)engine;
     TypioRimeSession *session;
 
-    if (!engine || !ctx || !profile_id || !*profile_id) {
+    if (!engine || !ctx || !mode_id || !*mode_id) {
         return TYPIO_ERROR_INVALID_ARGUMENT;
     }
 
@@ -165,7 +165,7 @@ TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
 
     /* The reported profile_id is the Rime schema id; restore it by selecting
      * that schema. librime's "schema" notification then drives publish. */
-    if (!session->state->api->select_schema(session->session_id, profile_id)) {
+    if (!session->state->api->select_schema(session->session_id, mode_id)) {
         return TYPIO_ERROR_NOT_FOUND;
     }
     typio_rime_publish_status(base, session->session_id);

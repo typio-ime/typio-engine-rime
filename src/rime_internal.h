@@ -87,22 +87,22 @@ typedef struct TypioRimeState {
     TypioRimeControl control;
 } TypioRimeState;
 
-/* Backing storage for a TypioEngineStatus built from RimeStatus. The mode's
+/* Backing storage for a TypioEngineStatus built from RimeStatus. The status's
  * const char* fields point into these buffers, so the buffer must outlive the
- * borrowed mode pointer (see typio_rime_get_status). */
-typedef struct TypioRimeModeBuf {
+ * borrowed status pointer (see typio_rime_get_status). */
+typedef struct TypioRimeStatusBuf {
     char profile_id[128];     /* Rime schema id, e.g. "luna_pinyin" */
     char profile_label[128];  /* Rime schema name, e.g. "朙月拼音" */
     char icon[160];           /* Resolved freedesktop icon name */
     char display_label[8];    /* "中" / "A" */
-    TypioEngineStatus mode;
-} TypioRimeModeBuf;
+    TypioEngineStatus status;
+} TypioRimeStatusBuf;
 
 typedef struct TypioRimeSession {
     TypioRimeState *state;
     RimeSessionId session_id;
     uint32_t deploy_id;
-    TypioRimeModeBuf modebuf;  /* storage for get_status's borrowed result */
+    TypioRimeStatusBuf statusbuf;  /* storage for get_status's borrowed result */
 } TypioRimeSession;
 
 /* -------------------------------------------------------------------------- */
@@ -150,6 +150,8 @@ bool typio_rime_ensure_deployed(TypioRimeState *state);
 
 void typio_rime_free_session(void *data);
 bool typio_rime_apply_schema(TypioRimeSession *session);
+char *typio_rime_resolve_schema(TypioRimeState *state,
+                                const char *requested_schema);
 TypioRimeSession *typio_rime_get_session(TypioEngine *engine,
                                           TypioInputContext *ctx,
                                           bool create);
@@ -168,14 +170,14 @@ bool typio_rime_sync_context(TypioRimeSession *session,
 /* Mode management (rime_mode.c)                                              */
 /* -------------------------------------------------------------------------- */
 
-/* Read librime's live RimeStatus, push the derived mode to the framework, and
+/* Read librime's live RimeStatus, push the derived status to the framework, and
  * mirror any librime-initiated schema change back into the config tree. */
 void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id);
 const TypioEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
-                                            TypioInputContext *ctx);
+                                                TypioInputContext *ctx);
 TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
-                                 TypioInputContext *ctx,
-                                 const char *profile_id);
+                                   TypioInputContext *ctx,
+                                   const char *mode_id);
 
 /* -------------------------------------------------------------------------- */
 /* Key handling (rime_key.c)                                                  */

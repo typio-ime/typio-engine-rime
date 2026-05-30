@@ -41,9 +41,14 @@ static TypioKeyProcessResult dummy_process_key(TypioKeyboardEngine *engine,
     return TYPIO_KEY_NOT_HANDLED;
 }
 
+static void dummy_deactivate(TypioEngine *engine) {
+    (void)engine;
+}
+
 static const TypioEngineBaseOps dummy_base_ops = {
     .init = dummy_init,
     .destroy = dummy_destroy,
+    .deactivate = dummy_deactivate,
 };
 
 static const TypioKeyboardEngineOps dummy_keyboard_ops = {
@@ -728,6 +733,66 @@ TEST(selection_navigation_only_updates_candidates) {
     typio_instance_free(instance);
 }
 
+TEST(invalid_configured_schema_falls_back_to_available_schema) {
+    char temp_root[] = "/tmp/typio-rime-test-XXXXXX";
+    char config_dir[1024];
+    char data_dir[1024];
+    char state_dir[1024];
+    char config_path[1024];
+    TypioInstanceConfig config = {};
+    CaptureState capture = {};
+
+    ASSERT_NOT_NULL(mkdtemp(temp_root));
+    ASSERT(snprintf(config_dir, sizeof(config_dir), "%s/config", temp_root) < (int)sizeof(config_dir));
+    ASSERT(snprintf(data_dir, sizeof(data_dir), "%s/data", temp_root) < (int)sizeof(data_dir));
+    ASSERT(snprintf(state_dir, sizeof(state_dir), "%s/state", temp_root) < (int)sizeof(state_dir));
+    ASSERT(snprintf(config_path, sizeof(config_path), "%s/typio.toml", config_dir) < (int)sizeof(config_path));
+
+    ASSERT(ensure_dir(config_dir));
+    ASSERT(ensure_dir(data_dir));
+    ASSERT(ensure_dir(state_dir));
+    ASSERT(ensure_rime_user_data(data_dir));
+    ASSERT(write_file(config_path,
+                      "default_engine = \"rime\"\n"
+                      "[engines.rime]\n"
+                      "schema = \"chinese\"\n"));
+
+    config.config_dir = config_dir;
+    config.data_dir = data_dir;
+    config.state_dir = state_dir;
+    TEST_SET_ENGINE_DIRS(config);
+
+    TypioInstance *instance = typio_instance_new_with_config(&config);
+    ASSERT_NOT_NULL(instance);
+    ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
+
+    TypioInputContext *ctx = typio_instance_create_context(instance);
+    ASSERT_NOT_NULL(ctx);
+    typio_input_context_set_composition_callback(ctx, capture_composition, &capture);
+    typio_input_context_focus_in(ctx);
+
+    TypioKeyEvent *n_key = key_event_for_char('n');
+    TypioKeyEvent *i_key = key_event_for_char('i');
+    ASSERT_NOT_NULL(n_key);
+    ASSERT_NOT_NULL(i_key);
+
+    ASSERT(typio_input_context_process_key(ctx, n_key));
+    ASSERT(typio_input_context_process_key(ctx, i_key));
+    ASSERT(capture.candidate_count > 0 || (capture.preedit_text && *capture.preedit_text));
+
+    TypioConfig *root = typio_instance_get_config(instance);
+    const char *schema = typio_config_get_string(root, "engines.rime.schema", "");
+    ASSERT(schema && *schema);
+    ASSERT(strcmp(schema, "chinese") != 0);
+
+    typio_key_event_free(n_key);
+    typio_key_event_free(i_key);
+    free_capture(&capture);
+    typio_instance_destroy_context(instance, ctx);
+    typio_instance_free(instance);
+}
+
 static TypioKeyboardEngine *load_rime_engine_direct(void) {
     DIR *d = opendir(TYPIO_TEST_RIME_ENGINE_DIR);
     if (!d) {
@@ -851,6 +916,7 @@ int main(void) {
     run_test_refocus_preserves_latin_mode();
     run_test_engine_switch_preserves_latin_mode_within_context();
     run_test_selection_navigation_only_updates_candidates();
+    run_test_invalid_configured_schema_falls_back_to_available_schema();
     run_test_deploy_rime_config_rebuilds_generated_yaml();
     printf("\nPassed %d/%d tests\n", tests_passed, tests_run);
     return 0;

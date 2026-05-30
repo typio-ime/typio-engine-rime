@@ -338,6 +338,7 @@ static const TypioEngineInfo typio_rime_engine_info = {
 static const TypioEngineBaseOps typio_rime_base_ops = {
     .init = typio_rime_init,
     .destroy = typio_rime_destroy,
+    .deactivate = nullptr,
     .focus_in = typio_rime_focus_in,
     .focus_out = typio_rime_focus_out,
     .reset = typio_rime_reset,
