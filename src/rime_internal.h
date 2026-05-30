@@ -82,20 +82,27 @@ typedef struct TypioRimeState {
     uint32_t deploy_id;
     /* Back-pointer to the owning engine for notification callbacks */
     struct TypioEngine *engine;
-    /* Cached from the last notification callback */
-    bool ascii_mode;
-    bool ascii_mode_known;
     /* Set by the "deploy" control command; consumed by reload_config. */
     bool deploy_requested;
     TypioRimeControl control;
 } TypioRimeState;
 
+/* Backing storage for a TypioEngineStatus built from RimeStatus. The mode's
+ * const char* fields point into these buffers, so the buffer must outlive the
+ * borrowed mode pointer (see typio_rime_get_status). */
+typedef struct TypioRimeModeBuf {
+    char profile_id[128];     /* Rime schema id, e.g. "luna_pinyin" */
+    char profile_label[128];  /* Rime schema name, e.g. "朙月拼音" */
+    char icon[160];           /* Resolved freedesktop icon name */
+    char display_label[8];    /* "中" / "A" */
+    TypioEngineStatus mode;
+} TypioRimeModeBuf;
+
 typedef struct TypioRimeSession {
     TypioRimeState *state;
     RimeSessionId session_id;
-    bool ascii_mode_known;
-    bool ascii_mode;
     uint32_t deploy_id;
+    TypioRimeModeBuf modebuf;  /* storage for get_status's borrowed result */
 } TypioRimeSession;
 
 /* -------------------------------------------------------------------------- */
@@ -161,20 +168,14 @@ bool typio_rime_sync_context(TypioRimeSession *session,
 /* Mode management (rime_mode.c)                                              */
 /* -------------------------------------------------------------------------- */
 
-extern const TypioEngineMode typio_rime_mode_chinese;
-extern const TypioEngineMode typio_rime_mode_latin;
-
-const TypioEngineMode *typio_rime_mode_for_ascii(bool ascii_mode);
-void typio_rime_notify_mode(TypioEngine *engine,
-                             TypioRimeSession *session,
-                             bool ascii_mode);
-void typio_rime_refresh_mode(TypioEngine *engine,
-                               TypioRimeSession *session);
-const TypioEngineMode *typio_rime_get_mode(TypioKeyboardEngine *engine,
+/* Read librime's live RimeStatus, push the derived mode to the framework, and
+ * mirror any librime-initiated schema change back into the config tree. */
+void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id);
+const TypioEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
                                             TypioInputContext *ctx);
-TypioResult typio_rime_set_mode(TypioKeyboardEngine *engine,
+TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
                                  TypioInputContext *ctx,
-                                 const char *mode_id);
+                                 const char *profile_id);
 
 /* -------------------------------------------------------------------------- */
 /* Key handling (rime_key.c)                                                  */

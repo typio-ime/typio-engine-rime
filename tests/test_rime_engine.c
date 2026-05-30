@@ -51,7 +51,6 @@ static const TypioKeyboardEngineOps dummy_keyboard_ops = {
 };
 
 static const TypioEngineInfo dummy_engine_info = {
-    .struct_size = sizeof(TypioEngineInfo),
     .name = "basic",
     .display_name = "Basic",
     .description = "Dummy basic engine for tests.",
@@ -343,11 +342,11 @@ TEST(load_and_compose) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "rime";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
 
     TypioRegistry *registry = typio_instance_get_registry(instance);
     ASSERT_NOT_NULL(registry);
@@ -416,11 +415,11 @@ TEST(switch_to_rime_first_shift_toggles_latin_mode) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "basic";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "basic"), TYPIO_OK);
     typio_instance_set_status_icon_changed_callback(instance, capture_status_icon, &capture);
 
     TypioInputContext *ctx = typio_instance_create_context(instance);
@@ -439,7 +438,7 @@ TEST(switch_to_rime_first_shift_toggles_latin_mode) {
     (void)typio_input_context_process_key(ctx, shift_press);
     (void)typio_input_context_process_key(ctx, shift_release);
     ASSERT(capture.status_icon != nullptr);
-    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin");
+    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin-symbolic");
 
     typio_key_event_free(shift_press);
     typio_key_event_free(shift_release);
@@ -478,11 +477,11 @@ TEST(switch_back_to_rime_first_shift_toggles_latin_mode) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "rime";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
     typio_instance_set_status_icon_changed_callback(instance, capture_status_icon, &capture);
 
     TypioInputContext *ctx = typio_instance_create_context(instance);
@@ -502,7 +501,7 @@ TEST(switch_back_to_rime_first_shift_toggles_latin_mode) {
     (void)typio_input_context_process_key(ctx, shift_press);
     (void)typio_input_context_process_key(ctx, shift_release);
     ASSERT(capture.status_icon != nullptr);
-    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin");
+    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin-symbolic");
 
     typio_key_event_free(shift_press);
     typio_key_event_free(shift_release);
@@ -541,11 +540,11 @@ TEST(refocus_preserves_latin_mode) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "rime";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
     typio_instance_set_status_icon_changed_callback(instance, capture_status_icon, &capture);
 
     TypioInputContext *ctx = typio_instance_create_context(instance);
@@ -560,14 +559,14 @@ TEST(refocus_preserves_latin_mode) {
     (void)typio_input_context_process_key(ctx, shift_press);
     (void)typio_input_context_process_key(ctx, shift_release);
     ASSERT(capture.status_icon != nullptr);
-    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin");
+    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin-symbolic");
 
     typio_input_context_focus_out(ctx);
     typio_input_context_focus_in(ctx);
 
-    const TypioEngineMode *mode = typio_instance_get_last_mode(instance);
+    const TypioEngineStatus *mode = typio_instance_get_last_status(instance);
     ASSERT_NOT_NULL(mode);
-    ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin");
+    ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin-symbolic");
 
     typio_key_event_free(shift_press);
     typio_key_event_free(shift_release);
@@ -606,11 +605,11 @@ TEST(engine_switch_preserves_latin_mode_within_context) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "rime";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
     typio_instance_set_status_icon_changed_callback(instance, capture_status_icon, &capture);
 
     TypioInputContext *ctx = typio_instance_create_context(instance);
@@ -625,16 +624,16 @@ TEST(engine_switch_preserves_latin_mode_within_context) {
     (void)typio_input_context_process_key(ctx, shift_press);
     (void)typio_input_context_process_key(ctx, shift_release);
     ASSERT(capture.status_icon != nullptr);
-    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin");
+    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin-symbolic");
 
     TypioRegistry *registry = typio_instance_get_registry(instance);
     ASSERT_NOT_NULL(registry);
     ASSERT_EQ(typio_registry_set_active_keyboard(registry, "basic"), TYPIO_OK);
     ASSERT_EQ(typio_registry_set_active_keyboard(registry, "rime"), TYPIO_OK);
 
-    const TypioEngineMode *mode = typio_instance_get_last_mode(instance);
+    const TypioEngineStatus *mode = typio_instance_get_last_status(instance);
     ASSERT_NOT_NULL(mode);
-    ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin");
+    ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin-symbolic");
 
     typio_key_event_free(shift_press);
     typio_key_event_free(shift_release);
@@ -677,11 +676,11 @@ TEST(selection_navigation_only_updates_candidates) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "rime";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
 
     TypioInputContext *ctx = typio_instance_create_context(instance);
     ASSERT_NOT_NULL(ctx);
@@ -806,11 +805,11 @@ TEST(deploy_rime_config_rebuilds_generated_yaml) {
     config.data_dir = data_dir;
     config.state_dir = state_dir;
     TEST_SET_ENGINE_DIRS(config);
-    config.default_keyboard_engine = "basic";
 
     TypioInstance *instance = typio_instance_new_with_config(&config);
     ASSERT_NOT_NULL(instance);
     ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "basic"), TYPIO_OK);
 
     /* Direct-load the rime engine to access its control surface.
      * Use "basic" as the default instance engine so the instance does not

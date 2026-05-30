@@ -116,6 +116,6 @@ TypioRimeSession *typio_rime_get_session(TypioEngine *engine,
     }
 
     typio_input_context_set_property(ctx, TYPIO_RIME_SESSION_KEY, session, typio_rime_free_session);
-    typio_rime_refresh_mode(engine, session);
+    typio_rime_publish_status(engine, session->session_id);
     return session;
 }

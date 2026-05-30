@@ -21,7 +21,6 @@ static void typio_rime_notification(void *context_object,
                                      const char *message_type,
                                      const char *message_value) {
     TypioRimeState *state = context_object;
-    (void)session_id;
 
     if (!state || !message_type || !message_value) {
         return;
@@ -37,20 +36,13 @@ static void typio_rime_notification(void *context_object,
         return;
     }
 
-    if (strcmp(message_type, "option") == 0) {
-        bool ascii_mode = false;
-        if (strcmp(message_value, "ascii_mode") == 0) {
-            ascii_mode = true;
-        } else if (strcmp(message_value, "!ascii_mode") == 0) {
-            ascii_mode = false;
-        } else {
-            return;
-        }
-        state->ascii_mode = ascii_mode;
-        state->ascii_mode_known = true;
-        if (state->engine && state->engine->instance) {
-            typio_instance_notify_mode(state->engine->instance,
-                                        typio_rime_mode_for_ascii(ascii_mode));
+    /* Any option toggle (ascii_mode, full_shape, …) or a schema switch shifts
+     * the observable state. Re-derive everything from the live RimeStatus
+     * rather than tracking individual options as shadow state. */
+    if (strcmp(message_type, "option") == 0 ||
+        strcmp(message_type, "schema") == 0) {
+        if (state->engine) {
+            typio_rime_publish_status(state->engine, session_id);
         }
         return;
     }
@@ -143,9 +135,7 @@ static void typio_rime_destroy(TypioEngine *engine) {
 static void typio_rime_focus_in(TypioEngine *engine, TypioInputContext *ctx) {
     TypioRimeSession *session = typio_rime_get_session(engine, ctx, true);
     if (session) {
-        if (!session->ascii_mode_known) {
-            typio_rime_refresh_mode(engine, session);
-        }
+        typio_rime_publish_status(engine, session->session_id);
         typio_rime_sync_context(session, ctx);
     }
 }
@@ -160,11 +150,7 @@ static void typio_rime_reset(TypioEngine *engine, TypioInputContext *ctx) {
 
     session->state->api->clear_composition(session->session_id);
     typio_rime_clear_state(ctx);
-    if (session->ascii_mode_known) {
-        typio_rime_notify_mode(engine, session, session->ascii_mode);
-    } else {
-        typio_rime_refresh_mode(engine, session);
-    }
+    typio_rime_publish_status(engine, session->session_id);
 }
 
 static void typio_rime_focus_out(TypioEngine *engine, TypioInputContext *ctx) {
@@ -232,16 +218,9 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         (int)event->keysym,
         (int)rime_mask);
 
-    /* Mode switch detection via notification handler is preferred, but
-     * fall back to polling get_option after every key for older librime
-     * or when the notification fires before our handler is registered. */
-    {
-        Bool ascii_after = session->state->api->get_option(session->session_id, "ascii_mode");
-        bool ascii_bool = ascii_after != 0;
-        if (!session->ascii_mode_known || session->ascii_mode != ascii_bool) {
-            typio_rime_notify_mode(base, session, ascii_bool);
-        }
-    }
+    /* ascii_mode / schema switches are reflected by the librime notification
+     * handler (typio_rime_notification -> publish_status), which fires
+     * synchronously during process_key. No post-key polling needed. */
 
     if (!handled) {
         return TYPIO_KEY_NOT_HANDLED;
@@ -345,7 +324,6 @@ static const char *const typio_rime_optional_caps[] = {
 };
 
 static const TypioEngineInfo typio_rime_engine_info = {
-    .struct_size = sizeof(TypioEngineInfo),
     .name = "rime",
     .display_name = "Rime",
     .description = "Chinese input engine powered by librime.",
@@ -369,8 +347,8 @@ static const TypioEngineBaseOps typio_rime_base_ops = {
 
 static const TypioKeyboardEngineOps typio_rime_keyboard_ops = {
     .process_key = typio_rime_process_key,
-    .get_mode = typio_rime_get_mode,
-    .set_mode = typio_rime_set_mode,
+    .get_status = typio_rime_get_status,
+    .set_status = typio_rime_set_status,
 };
 
 static TypioKeyboardEngine *typio_rime_engine_create(void) {
