@@ -12,6 +12,32 @@
  */
 
 #include "rime_internal.h"
+#include <pthread.h>
+
+typedef struct {
+    char *user_data_dir;
+    TypioRimeState *state;
+} SetupJob;
+
+static void *setup_thread_func(void *arg) {
+    SetupJob *job = arg;
+
+    TypioResult res = typio_rime_setup_rime_ice(job->user_data_dir);
+    if (res != TYPIO_OK) {
+        typio_log_error("rime: setup failed");
+        free(job->user_data_dir);
+        free(job);
+        return NULL;
+    }
+
+    typio_log_info("rime: running deployment after rime-ice install");
+    typio_rime_invalidate_generated_yaml(job->state);
+    typio_rime_run_maintenance(job->state, true);
+
+    free(job->user_data_dir);
+    free(job);
+    return NULL;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Engine command surface                                                     */
@@ -43,12 +69,26 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
         if (!typio_rime_ensure_dir(state->config.user_data_dir)) {
             return TYPIO_ERROR;
         }
-        TypioResult res = typio_rime_setup_rime_ice(state->config.user_data_dir);
-        if (res != TYPIO_OK) {
-            return res;
+        SetupJob *job = calloc(1, sizeof(SetupJob));
+        if (!job) {
+            return TYPIO_ERROR_OUT_OF_MEMORY;
         }
-        state->deploy_requested = true;
-        return typio_rime_reload_config(engine);
+        job->user_data_dir = strdup(state->config.user_data_dir);
+        job->state = state;
+        if (!job->user_data_dir) {
+            free(job);
+            return TYPIO_ERROR_OUT_OF_MEMORY;
+        }
+        pthread_t tid;
+        if (pthread_create(&tid, NULL, setup_thread_func, job) != 0) {
+            typio_log_error("rime: failed to spawn setup thread");
+            free(job->user_data_dir);
+            free(job);
+            return TYPIO_ERROR;
+        }
+        pthread_detach(tid);
+        typio_log_info("rime: setup started in background");
+        return TYPIO_OK;
     }
     if (strcmp(id, "deploy") == 0) {
         state->deploy_requested = true;
