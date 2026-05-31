@@ -95,7 +95,7 @@ typedef struct TypioRimeStatusBuf {
     char profile_id[128];     /* Rime schema id, e.g. "luna_pinyin" */
     char profile_label[128];  /* Rime schema name, e.g. "朙月拼音" */
     char icon[160];           /* Resolved freedesktop icon name */
-    char display_label[8];    /* "中" / "A" */
+    char display_label[128];   /* schema name or "中" / "A" */
     TypioEngineStatus status;
 } TypioRimeStatusBuf;
 

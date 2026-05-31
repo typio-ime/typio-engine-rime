@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fix indicator garbled text for schema names longer than 7 UTF-8 bytes.
+  `display_label` buffer increased from 8 to 128 bytes; `snprintf` was
+  truncating multi-byte sequences mid-character, producing invalid UTF-8 that
+  rendered as .notdef glyphs (tofu) in the panel. (ADR-0016 in typio-wayland)
+
 ## [0.0.2] - 2026-05-30
 
 ### Added
