@@ -27,20 +27,32 @@ static void typio_rime_notification(void *context_object,
     }
 
     if (strcmp(message_type, "deploy") == 0) {
-        if (strcmp(message_value, "success") == 0) {
+        if (strcmp(message_value, "start") == 0) {
+            typio_log_info("Rime: deployment started");
+            state->maintenance_done = false;
+        } else if (strcmp(message_value, "success") == 0) {
             state->maintenance_done = true;
-            typio_log_info("Rime deployment finished");
+            typio_log_info("Rime: deployment finished");
         } else if (strcmp(message_value, "failure") == 0) {
-            typio_log_error("Rime deployment failed");
+            typio_log_error("Rime: deployment failed");
         }
         return;
     }
 
-    /* Any option toggle (ascii_mode, full_shape, …) or a schema switch shifts
-     * the observable state. Re-derive everything from the live RimeStatus
-     * rather than tracking individual options as shadow state. */
-    if (strcmp(message_type, "option") == 0 ||
-        strcmp(message_type, "schema") == 0) {
+    if (strcmp(message_type, "option") == 0) {
+        if (strcmp(message_value, "ascii_mode") == 0) {
+            typio_log_info("Rime: switched to English (ascii_mode)");
+        } else if (strcmp(message_value, "!ascii_mode") == 0) {
+            typio_log_info("Rime: switched to Chinese (native mode)");
+        }
+        if (state->engine) {
+            typio_rime_publish_status(state->engine, session_id);
+        }
+        return;
+    }
+
+    if (strcmp(message_type, "schema") == 0) {
+        typio_log_info("Rime: schema changed to %s", message_value);
         if (state->engine) {
             typio_rime_publish_status(state->engine, session_id);
         }
@@ -189,22 +201,6 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
 
     session = typio_rime_get_session(base, ctx, true);
     if (!session) {
-        if (typio_rime_is_maintaining(typio_engine_get_user_data(base))) {
-            /* Show a temporary preedit message during deployment */
-            TypioPreeditSegment segment = {
-                .text = "… Rime 正在部署",
-                .format = TYPIO_PREEDIT_NONE,
-            };
-            TypioComposition comp = {
-                .struct_size = sizeof(TypioComposition),
-                .segments = &segment,
-                .segment_count = 1,
-                .cursor_pos = 0,
-                .selected = -1,
-            };
-            typio_input_context_set_composition(ctx, &comp);
-            return TYPIO_KEY_HANDLED;
-        }
         return TYPIO_KEY_NOT_HANDLED;
     }
 
