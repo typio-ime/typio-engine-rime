@@ -17,6 +17,7 @@
 typedef struct {
     char *user_data_dir;
     TypioRimeState *state;
+    TypioInstance *instance;
 } SetupJob;
 
 static void *setup_thread_func(void *arg) {
@@ -30,9 +31,17 @@ static void *setup_thread_func(void *arg) {
         return NULL;
     }
 
+    if (job->instance) {
+        typio_instance_set_engine_config_key(
+            job->instance, "rime", "schema", "rime_ice");
+    }
+
     typio_log_info("rime: running deployment after rime-ice install");
     typio_rime_invalidate_generated_yaml(job->state);
     typio_rime_run_maintenance(job->state, true);
+    job->state->api->join_maintenance_thread();
+    job->state->maintenance_done = true;
+    typio_log_info("rime: setup and deployment complete");
 
     free(job->user_data_dir);
     free(job);
@@ -75,6 +84,7 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
         }
         job->user_data_dir = strdup(state->config.user_data_dir);
         job->state = state;
+        job->instance = engine->instance;
         if (!job->user_data_dir) {
             free(job);
             return TYPIO_ERROR_OUT_OF_MEMORY;

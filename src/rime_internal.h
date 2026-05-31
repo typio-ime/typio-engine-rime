@@ -11,6 +11,7 @@
 #define TYPIO_RIME_INTERNAL_H
 
 #include "typio/abi/abi.h"
+#include "typio/abi/instance.h"
 #include "typio/schema/config_schema.h"
 
 #include <rime_api.h>
