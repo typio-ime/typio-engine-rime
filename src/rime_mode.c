@@ -64,8 +64,14 @@ static void rime_fill_status(TypioRimeState *state, RimeSessionId session_id,
 
     snprintf(buf->icon, sizeof(buf->icon),
              "%s", ascii ? TYPIO_RIME_ICON_LATIN : TYPIO_RIME_ICON_NATIVE);
-    snprintf(buf->display_label, sizeof(buf->display_label),
-             "%s", ascii ? "A" : "中");
+    if (ascii) {
+        snprintf(buf->display_label, sizeof(buf->display_label), "A");
+    } else if (buf->profile_label[0]) {
+        snprintf(buf->display_label, sizeof(buf->display_label),
+                 "%s", buf->profile_label);
+    } else {
+        snprintf(buf->display_label, sizeof(buf->display_label), "中");
+    }
 
     buf->status.engagement = ascii ? TYPIO_ENGAGE_PASSTHROUGH : TYPIO_ENGAGE_ACTIVE;
     buf->status.profile_id = buf->profile_id;
