@@ -11,6 +11,7 @@
  */
 
 #include "rime_internal.h"
+#include <stddef.h>
 
 /* -------------------------------------------------------------------------- */
 /* librime notification handler                                               */
@@ -209,9 +210,16 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         rime_mask |= TYPIO_RIME_RELEASE_MASK;
     }
 
+    uint32_t rime_keysym = event->keysym;
+    if (event->struct_size >= offsetof(TypioKeyEvent, base_keysym) + sizeof(uint32_t)
+        && event->base_keysym != 0
+        && (event->modifiers & TYPIO_MOD_SHIFT)) {
+        rime_keysym = event->base_keysym;
+    }
+
     handled = session->state->api->process_key(
         session->session_id,
-        (int)event->keysym,
+        (int)rime_keysym,
         (int)rime_mask);
 
     /* ascii_mode / schema switches are reflected by the librime notification
