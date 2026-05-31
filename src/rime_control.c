@@ -13,6 +13,7 @@
 
 #include "rime_internal.h"
 #include <pthread.h>
+#include <time.h>
 
 typedef struct {
     char *user_data_dir;
@@ -37,6 +38,15 @@ static void *setup_thread_func(void *arg) {
     }
 
     typio_log_info("rime: running deployment after rime-ice install");
+
+    for (int i = 0; i < 60; i++) {
+        if (!typio_rime_is_maintaining(job->state)) {
+            break;
+        }
+        struct timespec ts = { .tv_sec = 0, .tv_nsec = 500000000 };
+        nanosleep(&ts, NULL);
+    }
+
     typio_rime_invalidate_generated_yaml(job->state);
     typio_rime_run_maintenance(job->state, true);
     job->state->api->join_maintenance_thread();
