@@ -41,7 +41,7 @@ DESTDIR="$pkgdir" ninja -C build install
 
 | Source | Destination | Description |
 |--------|-------------|-------------|
-| `libtypio-engine-rime.so` | `<libdir>/typio/engines/` | Engine plugin discovered by the host at runtime |
+| `libtypio_engine_rime.so` | `<libdir>/typio/engines/` | Engine plugin discovered by the host at runtime |
 | `data/icons/hicolor/scalable/apps/typio-rime-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for Chinese input mode |
 | `data/icons/hicolor/scalable/apps/typio-rime-latin-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for ASCII (Latin) input mode |
 
@@ -64,7 +64,7 @@ their own schemas under `shared_data_dir` (default `/usr/share/rime-data`).
 
 ## Packaging checklist
 
-- [ ] Engine installs to `<libdir>/typio/engines/libtypio-engine-rime.so`
+- [ ] Engine installs to `<libdir>/typio/engines/libtypio_engine_rime.so`
 - [ ] Icons install to `<datadir>/icons/hicolor/scalable/apps/`
 - [ ] `typio-engine-abi` or `libtypio` is listed as a build dependency
 - [ ] `librime` is listed as both build and runtime dependency

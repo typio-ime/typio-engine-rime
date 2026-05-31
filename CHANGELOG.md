@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release of the Rime input engine for the Typio framework, building
-  to `libtypio-engine-rime.so` and discovered by hosts under
+  to `libtypio_engine_rime.so` and discovered by hosts under
   `<libdir>/typio/engines`.
 - Configuration via the Typio host config `[engines.rime]` section
   (`schema`, `shared_data_dir`, `user_data_dir`).

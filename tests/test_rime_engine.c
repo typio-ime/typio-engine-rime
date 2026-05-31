@@ -17,7 +17,7 @@
 #endif
 
 /* Minimal host-style plugin loader: core no longer dlopens plugins, so
- * the test plays the host role and loads libtypio-engine-*.so itself. */
+ * the test plays the host role and loads libtypio_engine_*.so itself. */
 static void test_plugin_close(void *handle) {
     if (handle) {
         dlclose(handle);
@@ -92,7 +92,7 @@ static int test_plugin_loader(TypioRegistry *registry,
     struct dirent *ent;
     while ((ent = readdir(d)) != NULL) {
         size_t len = strlen(ent->d_name);
-        if (strncmp(ent->d_name, "libtypio-engine-", 16) != 0 ||
+        if (strncmp(ent->d_name, "libtypio_engine_", 16) != 0 ||
             len < 3 || strcmp(ent->d_name + len - 3, ".so") != 0) {
             continue;
         }
@@ -802,7 +802,7 @@ static TypioKeyboardEngine *load_rime_engine_direct(void) {
     struct dirent *ent;
     while ((ent = readdir(d)) != nullptr) {
         size_t len = strlen(ent->d_name);
-        if (strncmp(ent->d_name, "libtypio-engine-", 16) != 0 ||
+        if (strncmp(ent->d_name, "libtypio_engine_", 16) != 0 ||
             len < 3 || strcmp(ent->d_name + len - 3, ".so") != 0) {
             continue;
         }

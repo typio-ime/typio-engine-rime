@@ -4,7 +4,7 @@ The [Rime](https://rime.im/) input engine for the
 [Typio](https://github.com/) input method framework, packaged as a
 standalone plugin.
 
-It builds to `libtypio-engine-rime.so`, which a Typio host discovers and
+It builds to `libtypio_engine_rime.so`, which a Typio host discovers and
 loads at runtime from `<libdir>/typio/engines`.
 
 ## Building
@@ -34,7 +34,7 @@ engine directory instead of running a system install:
 meson setup build
 ninja -C build
 mkdir -p ~/.local/share/typio/engines
-cp build/libtypio-engine-rime.so ~/.local/share/typio/engines/
+cp build/libtypio_engine_rime.so ~/.local/share/typio/engines/
 ```
 
 Typio hosts scan `~/.local/share/typio/engines/` at runtime, so the engine

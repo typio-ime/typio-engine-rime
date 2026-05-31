@@ -53,7 +53,7 @@ Compile the shared module:
 ninja -C build
 ```
 
-When the build finishes you will have `build/libtypio-engine-rime.so`.
+When the build finishes you will have `build/libtypio_engine_rime.so`.
 
 ## Step 3 — Install locally for debugging
 
@@ -64,7 +64,7 @@ build with a custom prefix.
 
 ```sh
 mkdir -p ~/.local/share/typio/engines
-cp build/libtypio-engine-rime.so ~/.local/share/typio/engines/
+cp build/libtypio_engine_rime.so ~/.local/share/typio/engines/
 ```
 
 Typio hosts scan `~/.local/share/typio/engines/` at runtime. After copying

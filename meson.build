@@ -19,14 +19,14 @@ typio_abi_dep = dependency('typio-engine-abi',
 rime_dep = dependency('rime', required: true)
 
 # Where to install the plugin so a typio host discovers it. The host scans
-# <libdir>/typio/engines for libtypio-engine-*.so.
+# <libdir>/typio/engines for libtypio_engine_*.so.
 enginedir = get_option('libdir') / 'typio' / 'engines'
 
 subdir('src')
 
 engine_c_args = ['-DTYPIO_ENGINE_RIME_VERSION="' + meson.project_version() + '"']
 
-rime_engine = shared_module('typio-engine-rime',
+rime_engine = shared_module('typio_engine_rime',
     rime_sources,
     dependencies: [typio_abi_dep, rime_dep],
     include_directories: include_directories('src'),

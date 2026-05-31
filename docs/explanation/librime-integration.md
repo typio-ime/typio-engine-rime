@@ -6,12 +6,12 @@ This document describes how `typio-engine-rime` integrates with librime and how 
 
 ## 1. Architecture Overview
 
-Typio integrates librime via a **plugin engine**. The Rime engine lives in the `typio-engine-rime` repository, compiles to a shared library `libtypio-engine-rime.so`, and is loaded at runtime by the host's plugin loader.
+Typio integrates librime via a **plugin engine**. The Rime engine lives in the `typio-engine-rime` repository, compiles to a shared library `libtypio_engine_rime.so`, and is loaded at runtime by the host's plugin loader.
 
 ```mermaid
 flowchart TD
     subgraph Daemon["Typio Daemon (Wayland IME)"]
-        Core["libtypio (engine manager)<br/>loads engines/libtypio-engine-rime.so"]
+        Core["libtypio (engine manager)<br/>loads engines/libtypio_engine_rime.so"]
         Front[Wayland protocol frontend]
     end
     subgraph Plugin["Rime Engine Plugin"]
@@ -23,7 +23,7 @@ flowchart TD
         Key["rime_key.c (key handling)"]
         Config["rime_config.c (configuration)"]
         Path["path_expand.c (path helpers)"]
-        Lib["linked against libtypio-engine-rime.so"]
+        Lib["linked against libtypio_engine_rime.so"]
     end
     subgraph Librime["librime"]
         Schema[schema management]
