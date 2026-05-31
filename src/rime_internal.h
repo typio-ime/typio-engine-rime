@@ -70,7 +70,7 @@ typedef struct TypioRimeConfig {
 /* Static-lifetime command array backing the engine command surface
  * (rime_control.c). The command list never changes after engine load. */
 typedef struct TypioRimeControl {
-    TypioEngineCommand commands[1];
+    TypioEngineCommand commands[2];
 } TypioRimeControl;
 
 typedef struct TypioRimeState {
@@ -136,13 +136,17 @@ void typio_rime_on_config_change(TypioEngine *engine,
 extern const TypioEngineSurfaceOps typio_rime_surface_ops;
 
 /* -------------------------------------------------------------------------- */
-/* Deployment (rime_deploy.c)                                                 */
+/* Deployment (rime_deploy.c)                                                */
 /* -------------------------------------------------------------------------- */
 
 void typio_rime_invalidate_generated_yaml(TypioRimeState *state);
 bool typio_rime_run_maintenance(TypioRimeState *state, bool full_check);
 bool typio_rime_is_maintaining(TypioRimeState *state);
 bool typio_rime_ensure_deployed(TypioRimeState *state);
+
+/* Setup (rime_setup.c)                                                      */
+
+TypioResult typio_rime_setup_rime_ice(const char *user_data_dir);
 
 /* -------------------------------------------------------------------------- */
 /* Session management (rime_session.c)                                        */

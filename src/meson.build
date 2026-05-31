@@ -3,6 +3,7 @@ rime_sources = files(
     'rime_utils.c',
     'rime_config.c',
     'rime_deploy.c',
+    'rime_setup.c',
     'rime_session.c',
     'rime_sync.c',
     'rime_mode.c',

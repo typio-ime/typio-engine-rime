@@ -26,8 +26,8 @@ static const TypioEngineCommand *rime_list_commands(TypioEngine *engine,
     if (!state) {
         return nullptr;
     }
-    state->control.commands[0].id = "deploy";
-    state->control.commands[0].label = "Deploy";
+    state->control.commands[0].id = "setup";
+    state->control.commands[0].label = "Download rime-ice scheme and deploy";
     if (out_count) {
         *out_count = 1;
     }
@@ -39,11 +39,22 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
     if (!state || !id) {
         return TYPIO_ERROR_INVALID_ARGUMENT;
     }
-    if (strcmp(id, "deploy") != 0) {
-        return TYPIO_ERROR_NOT_FOUND;
+    if (strcmp(id, "setup") == 0) {
+        if (!typio_rime_ensure_dir(state->config.user_data_dir)) {
+            return TYPIO_ERROR;
+        }
+        TypioResult res = typio_rime_setup_rime_ice(state->config.user_data_dir);
+        if (res != TYPIO_OK) {
+            return res;
+        }
+        state->deploy_requested = true;
+        return typio_rime_reload_config(engine);
     }
-    state->deploy_requested = true;
-    return typio_rime_reload_config(engine);
+    if (strcmp(id, "deploy") == 0) {
+        state->deploy_requested = true;
+        return typio_rime_reload_config(engine);
+    }
+    return TYPIO_ERROR_NOT_FOUND;
 }
 
 const TypioEngineSurfaceOps typio_rime_surface_ops = {
