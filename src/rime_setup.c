@@ -1,9 +1,48 @@
 #include "rime_internal.h"
 #include <curl/curl.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #define RIME_ICE_URL \
     "https://github.com/iDvel/rime-ice/releases/download/nightly/full.zip"
+
+static bool dir_has_yaml_files(const char *dir_path) {
+    DIR *d = opendir(dir_path);
+    if (!d) {
+        return false;
+    }
+    struct dirent *entry;
+    while ((entry = readdir(d)) != NULL) {
+        size_t len = strlen(entry->d_name);
+        if (len >= 5 &&
+            (strcmp(entry->d_name + len - 5, ".yaml") == 0 ||
+             strcmp(entry->d_name + len - 5, ".YAML") == 0)) {
+            closedir(d);
+            return true;
+        }
+    }
+    closedir(d);
+    return false;
+}
+
+static bool backup_existing_dir(const char *dir_path) {
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char suffix[32];
+    strftime(suffix, sizeof(suffix), "%Y%m%d-%H%M%S", tm_info);
+
+    char backup_path[512];
+    snprintf(backup_path, sizeof(backup_path), "%s.bak.%s", dir_path, suffix);
+
+    typio_log_info("rime: backing up existing config %s -> %s",
+                   dir_path, backup_path);
+    if (rename(dir_path, backup_path) != 0) {
+        typio_log_error("rime: failed to backup %s: %s",
+                        dir_path, strerror(errno));
+        return false;
+    }
+    return true;
+}
 
 static TypioResult download_zip(const char *url, const char *dest_path) {
     CURL *curl = curl_easy_init();
@@ -71,6 +110,14 @@ TypioResult typio_rime_setup_rime_ice(const char *user_data_dir) {
         typio_log_info("rime: rime-ice already installed in %s",
                        user_data_dir);
         return TYPIO_OK;
+    }
+
+    if (stat(user_data_dir, &st) == 0 && S_ISDIR(st.st_mode)) {
+        if (dir_has_yaml_files(user_data_dir)) {
+            if (!backup_existing_dir(user_data_dir)) {
+                return TYPIO_ERROR;
+            }
+        }
     }
 
     if (!typio_rime_ensure_dir(user_data_dir)) {
