@@ -205,6 +205,11 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         return TYPIO_KEY_NOT_HANDLED;
     }
 
+    if (event->keysym == 0x7e || event->base_keysym == 0x60) {
+        typio_log_info("Rime: process_key ENTRY keysym=0x%x base=0x%x mods=0x%x struct_size=%zu",
+                       event->keysym, event->base_keysym, event->modifiers, event->struct_size);
+    }
+
     rime_mask = typio_rime_modifiers_to_mask(event->modifiers);
     if (is_release) {
         rime_mask |= TYPIO_RIME_RELEASE_MASK;
@@ -215,6 +220,11 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         && event->base_keysym != 0
         && (event->modifiers & TYPIO_MOD_SHIFT)) {
         rime_keysym = event->base_keysym;
+    }
+
+    if (rime_keysym == 0x60 && (event->modifiers & TYPIO_MOD_CTRL)) {
+        typio_log_info("Rime: process_key grave keysym=0x%x base=0x%x rime_sym=0x%x mask=0x%x",
+                       event->keysym, event->base_keysym, rime_keysym, rime_mask);
     }
 
     handled = session->state->api->process_key(
