@@ -148,8 +148,7 @@ static void typio_rime_destroy(TypioEngine *engine) {
 static void typio_rime_focus_in(TypioEngine *engine, TypioInputContext *ctx) {
     TypioRimeSession *session = typio_rime_get_session(engine, ctx, true);
     if (session) {
-        session->shift_held = false;
-        session->shift_only = false;
+        typio_rime_reset_shift_state(session);
         typio_rime_publish_status(engine, session->session_id);
         typio_rime_sync_context(session, ctx);
     }
@@ -163,8 +162,7 @@ static void typio_rime_reset(TypioEngine *engine, TypioInputContext *ctx) {
         return;
     }
 
-    session->shift_held = false;
-    session->shift_only = false;
+    typio_rime_reset_shift_state(session);
     session->state->api->clear_composition(session->session_id);
     typio_rime_clear_state(ctx);
     typio_rime_publish_status(engine, session->session_id);
@@ -192,7 +190,6 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
 
     is_release = (event->type == TYPIO_EVENT_KEY_RELEASE);
 
-    /* Handle Escape on press only */
     if (!is_release && typio_key_event_is_escape(event)) {
         const TypioPreedit *preedit = typio_input_context_get_preedit(ctx);
 
@@ -209,54 +206,12 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         return TYPIO_KEY_NOT_HANDLED;
     }
 
+    /* Bare Shift: engine-managed, bypasses librime's ascii_composer. */
     if (typio_rime_is_shift_keysym(event->keysym)) {
-        if (!is_release) {
-            session->shift_held = true;
-            session->shift_only = true;
-            return TYPIO_KEY_HANDLED;
-        }
-        session->shift_held = false;
-        if (session->shift_only) {
-            RIME_STRUCT(RimeContext, rctx);
-            session->shift_only = false;
-            if (session->state->api->get_context(session->session_id, &rctx)) {
-                if (rctx.composition.preedit && *rctx.composition.preedit) {
-                    const char *p = rctx.composition.preedit;
-                    size_t len = strlen(p);
-                    char *raw = calloc(len + 1, 1);
-                    if (raw) {
-                        size_t j = 0;
-                        for (size_t i = 0; i < len; i++) {
-                            unsigned char c = (unsigned char)p[i];
-                            if (c >= 0x20 && c < 0x7f) {
-                                raw[j++] = p[i];
-                            }
-                        }
-                        raw[j] = '\0';
-                        if (j > 0) {
-                            typio_input_context_commit(ctx, raw);
-                        }
-                        free(raw);
-                    }
-                }
-                session->state->api->free_context(&rctx);
-            }
-            session->state->api->clear_composition(session->session_id);
-            bool was_ascii = session->state->api->get_option(session->session_id, "ascii_mode");
-            session->state->api->set_option(session->session_id, "ascii_mode", !was_ascii);
-            typio_rime_clear_state(ctx);
-            typio_rime_publish_status(base, session->session_id);
-            return TYPIO_KEY_COMMITTED;
-        }
-        return TYPIO_KEY_HANDLED;
+        return typio_rime_handle_bare_shift(base, session, ctx, is_release);
     }
     if (!is_release) {
         session->shift_only = false;
-    }
-
-    if (event->keysym == 0x7e || event->base_keysym == 0x60) {
-        typio_log_info("Rime: process_key ENTRY keysym=0x%x base=0x%x mods=0x%x struct_size=%zu",
-                       event->keysym, event->base_keysym, event->modifiers, event->struct_size);
     }
 
     rime_mask = typio_rime_modifiers_to_mask(event->modifiers);
@@ -264,26 +219,12 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
         rime_mask |= TYPIO_RIME_RELEASE_MASK;
     }
 
-    uint32_t rime_keysym = event->keysym;
-    if (event->struct_size >= offsetof(TypioKeyEvent, base_keysym) + sizeof(uint32_t)
-        && event->base_keysym >= 'a' && event->base_keysym <= 'z'
-        && (event->modifiers & TYPIO_MOD_SHIFT)) {
-        rime_keysym = event->base_keysym;
-    }
-
-    if (rime_keysym == 0x60 && (event->modifiers & TYPIO_MOD_CTRL)) {
-        typio_log_info("Rime: process_key grave keysym=0x%x base=0x%x rime_sym=0x%x mask=0x%x",
-                       event->keysym, event->base_keysym, rime_keysym, rime_mask);
-    }
+    uint32_t rime_keysym = typio_rime_translate_keysym(event);
 
     handled = session->state->api->process_key(
         session->session_id,
         (int)rime_keysym,
         (int)rime_mask);
-
-    /* ascii_mode / schema switches are reflected by the librime notification
-     * handler (typio_rime_notification -> publish_status), which fires
-     * synchronously during process_key. No post-key polling needed. */
 
     if (!handled) {
         return TYPIO_KEY_NOT_HANDLED;

@@ -424,30 +424,34 @@ librime-sys = { path = "librime-sys" }
 
 ```
 typio-engine-rime/src/
-├── lib.rs               # engine entry point and dual-vtable registration
-├── path_expand.rs       # path expansion (~, $HOME, ${VAR})
-├── rime_config.rs       # configuration loading and cleanup
-├── rime_deploy.rs       # deployment and maintenance management
-├── rime_engine.rs       # engine lifecycle and vtable dispatch
-├── rime_key.rs          # key-event translation (modifiers, special keys)
-├── rime_mode.rs         # Chinese / ASCII mode switching and notification
-├── rime_session.rs      # librime session lifecycle per input context
-├── rime_sync.rs         # preedit / candidate / commit synchronisation
-├── rime_utils.rs        # small utility helpers (monotonic time, directory creation)
-└── mod.rs               # module re-exports
+├── rime_engine.c      # entry point, notification handler, ops wiring
+├── rime_session.c     # librime session lifecycle per input context
+├── rime_sync.c        # preedit / candidate / commit synchronisation
+├── rime_key.c         # modifier mask translation, keysym selection, bare-Shift state machine
+├── rime_mode.c        # Chinese / ASCII mode detection and notification
+├── rime_deploy.c      # deployment and maintenance management
+├── rime_control.c     # command surface (deploy, setup) and config-change hook
+├── rime_config.c      # configuration loading from Typio instance
+├── rime_setup.c       # rime-ice download and installation
+├── rime_utils.c       # small utility helpers (monotonic time, directory creation)
+├── path_expand.c      # path expansion (~, $HOME, ${VAR})
+└── rime_internal.h    # shared declarations for all modules
 ```
 
 The implementation is split into focused modules so each file has a single responsibility:
 
 | File | Lines (approx.) | Responsibility |
 |------|----------------|----------------|
-| `rime_engine.c` | ~370 | Engine entry point, notification handler, `TypioEngineBaseOps` wiring |
+| `rime_engine.c` | ~390 | Engine entry point, notification handler, `TypioEngineBaseOps` wiring |
+| `rime_key.c` | ~130 | Modifier mask translation, keysym selection, bare-Shift press/release handler |
 | `rime_sync.c` | ~170 | Convert librime `RimeContext` → `TypioInputContext` (preedit, candidates, commit) |
-| `rime_session.c` | ~120 | Create / destroy / validate `RimeSessionId`, schema selection with `get_status` |
+| `rime_session.c` | ~180 | Create / destroy / validate `RimeSessionId`, schema selection with `get_status` |
+| `rime_mode.c` | ~190 | ASCII ↔ Chinese mode detection, status publication, schema write-back |
 | `rime_deploy.c` | ~120 | Trigger and track librime deployment |
-| `rime_mode.c` | ~90 | ASCII ↔ Chinese mode detection and notification |
-| `rime_config.c` | ~80 | Load `[engines.rime]` settings from Typio config |
-| `rime_key.c` | ~35 | Modifier mask translation `TypioKeyEvent` → librime |
-| `rime_utils.c` | ~40 | `mkdir -p`, path existence, YAML suffix check |
+| `rime_control.c` | ~150 | Command surface (deploy, setup) and config-change hook |
+| `rime_config.c` | ~60 | Load `[engines.rime]` settings from Typio config |
+| `rime_setup.c` | ~150 | rime-ice download and installation |
+| `rime_utils.c` | ~60 | `mkdir -p`, path existence, YAML suffix check |
+| `path_expand.c` | ~170 | `~` and `$VAR` expansion in paths |
 
 This modular layout keeps the engine consistent with Typio's project-wide convention: `basic.c` (~250 lines) and `mozc_engine.cc` are also organised by lifecycle → input → output → config.

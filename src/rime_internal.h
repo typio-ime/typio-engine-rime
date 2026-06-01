@@ -192,5 +192,11 @@ TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
 
 bool typio_rime_is_shift_keysym(uint32_t keysym);
 uint32_t typio_rime_modifiers_to_mask(uint32_t modifiers);
+void typio_rime_reset_shift_state(TypioRimeSession *session);
+TypioKeyProcessResult typio_rime_handle_bare_shift(TypioEngine *base,
+                                                     TypioRimeSession *session,
+                                                     TypioInputContext *ctx,
+                                                     bool is_release);
+uint32_t typio_rime_translate_keysym(const TypioKeyEvent *event);
 
 #endif /* TYPIO_RIME_INTERNAL_H */
