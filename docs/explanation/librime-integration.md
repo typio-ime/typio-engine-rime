@@ -154,6 +154,14 @@ Typio MOD_NUMLOCK → RIME_MOD2_MASK (1 << 4)
 TYPIO_EVENT_KEY_RELEASE → TYPIO_RIME_RELEASE_MASK (1 << 30)
 ```
 
+**Keysym passthrough**: the effective keysym from the compositor is passed
+to librime unchanged. librime's `ascii_composer` detects Shift+letter from
+the modifier mask, not from keysym case. Remapping to `base_keysym` was
+previously attempted (sending lowercase `a` + Shift for Shift+A) but caused
+the speller to treat the key as pinyin input rather than triggering
+`inline_ascii` mode. The `base_keysym` field is still available on
+`TypioKeyEvent` for other consumers but is not used by this engine.
+
 ### 5.2 Processing Flow (`typio_rime_process_key`)
 
 ```
@@ -427,7 +435,7 @@ typio-engine-rime/src/
 ├── rime_engine.c      # entry point, notification handler, ops wiring
 ├── rime_session.c     # librime session lifecycle per input context
 ├── rime_sync.c        # preedit / candidate / commit synchronisation
-├── rime_key.c         # modifier mask translation, keysym selection, bare-Shift state machine
+├── rime_key.c         # modifier mask translation, keysym passthrough, bare-Shift state machine
 ├── rime_mode.c        # Chinese / ASCII mode detection and notification
 ├── rime_deploy.c      # deployment and maintenance management
 ├── rime_control.c     # command surface (deploy, setup) and config-change hook
@@ -443,7 +451,7 @@ The implementation is split into focused modules so each file has a single respo
 | File | Lines (approx.) | Responsibility |
 |------|----------------|----------------|
 | `rime_engine.c` | ~390 | Engine entry point, notification handler, `TypioEngineBaseOps` wiring |
-| `rime_key.c` | ~130 | Modifier mask translation, keysym selection, bare-Shift press/release handler |
+| `rime_key.c` | ~130 | Modifier mask translation, keysym passthrough, bare-Shift press/release handler |
 | `rime_sync.c` | ~170 | Convert librime `RimeContext` → `TypioInputContext` (preedit, candidates, commit) |
 | `rime_session.c` | ~180 | Create / destroy / validate `RimeSessionId`, schema selection with `get_status` |
 | `rime_mode.c` | ~190 | ASCII ↔ Chinese mode detection, status publication, schema write-back |

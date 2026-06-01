@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   This prevents the candidate panel from disappearing while the preedit remains
   underlined and unresponsive to subsequent input.
 
+- Fix Shift+symbol keys (e.g., Shift+/ → `?`, Shift+' → `"`) producing wrong
+  punctuation during composition. The engine now passes the effective keysym
+  directly to librime instead of remapping to `base_keysym`, so the punctuator
+  receives the correct shifted character for `half_shape` lookup.
+
 ## [0.0.3] - 2026-06-01
 
 ### Fixed
