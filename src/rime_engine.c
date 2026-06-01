@@ -148,6 +148,8 @@ static void typio_rime_destroy(TypioEngine *engine) {
 static void typio_rime_focus_in(TypioEngine *engine, TypioInputContext *ctx) {
     TypioRimeSession *session = typio_rime_get_session(engine, ctx, true);
     if (session) {
+        session->shift_held = false;
+        session->shift_only = false;
         typio_rime_publish_status(engine, session->session_id);
         typio_rime_sync_context(session, ctx);
     }
@@ -161,6 +163,8 @@ static void typio_rime_reset(TypioEngine *engine, TypioInputContext *ctx) {
         return;
     }
 
+    session->shift_held = false;
+    session->shift_only = false;
     session->state->api->clear_composition(session->session_id);
     typio_rime_clear_state(ctx);
     typio_rime_publish_status(engine, session->session_id);
@@ -203,6 +207,51 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
     session = typio_rime_get_session(base, ctx, true);
     if (!session) {
         return TYPIO_KEY_NOT_HANDLED;
+    }
+
+    if (typio_rime_is_shift_keysym(event->keysym)) {
+        if (!is_release) {
+            session->shift_held = true;
+            session->shift_only = true;
+            return TYPIO_KEY_HANDLED;
+        }
+        session->shift_held = false;
+        if (session->shift_only) {
+            RIME_STRUCT(RimeContext, rctx);
+            session->shift_only = false;
+            if (session->state->api->get_context(session->session_id, &rctx)) {
+                if (rctx.composition.preedit && *rctx.composition.preedit) {
+                    const char *p = rctx.composition.preedit;
+                    size_t len = strlen(p);
+                    char *raw = calloc(len + 1, 1);
+                    if (raw) {
+                        size_t j = 0;
+                        for (size_t i = 0; i < len; i++) {
+                            unsigned char c = (unsigned char)p[i];
+                            if (c >= 0x20 && c < 0x7f) {
+                                raw[j++] = p[i];
+                            }
+                        }
+                        raw[j] = '\0';
+                        if (j > 0) {
+                            typio_input_context_commit(ctx, raw);
+                        }
+                        free(raw);
+                    }
+                }
+                session->state->api->free_context(&rctx);
+            }
+            session->state->api->clear_composition(session->session_id);
+            bool was_ascii = session->state->api->get_option(session->session_id, "ascii_mode");
+            session->state->api->set_option(session->session_id, "ascii_mode", !was_ascii);
+            typio_rime_clear_state(ctx);
+            typio_rime_publish_status(base, session->session_id);
+            return TYPIO_KEY_COMMITTED;
+        }
+        return TYPIO_KEY_HANDLED;
+    }
+    if (!is_release) {
+        session->shift_only = false;
     }
 
     if (event->keysym == 0x7e || event->base_keysym == 0x60) {

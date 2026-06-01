@@ -279,6 +279,10 @@ static TypioKeyEvent *keysym_press_event(uint32_t keycode, uint32_t keysym) {
     return typio_key_event_new(TYPIO_EVENT_KEY_PRESS, keycode, keysym, TYPIO_MOD_NONE);
 }
 
+static TypioKeyEvent *bare_shift_event(TypioEventType type) {
+    return typio_key_event_new(type, 50, TYPIO_KEY_Shift_L, TYPIO_MOD_NONE);
+}
+
 static void reset_update_counters(CaptureState *capture) {
     if (!capture) {
         return;
@@ -907,6 +911,88 @@ TEST(deploy_rime_config_rebuilds_generated_yaml) {
     typio_instance_free(instance);
 }
 
+TEST(bare_shift_during_composition_commits_and_toggles) {
+    char temp_root[] = "/tmp/typio-rime-test-XXXXXX";
+    char config_dir[1024];
+    char data_dir[1024];
+    char state_dir[1024];
+    char config_path[1024];
+    TypioInstanceConfig config = {};
+    CaptureState capture = {};
+    TypioKeyEvent *n_key;
+    TypioKeyEvent *i_key;
+    TypioKeyEvent *shift_press;
+    TypioKeyEvent *shift_release;
+
+    ASSERT_NOT_NULL(mkdtemp(temp_root));
+    ASSERT(snprintf(config_dir, sizeof(config_dir), "%s/config", temp_root) < (int)sizeof(config_dir));
+    ASSERT(snprintf(data_dir, sizeof(data_dir), "%s/data", temp_root) < (int)sizeof(data_dir));
+    ASSERT(snprintf(state_dir, sizeof(state_dir), "%s/state", temp_root) < (int)sizeof(state_dir));
+    ASSERT(snprintf(config_path, sizeof(config_path), "%s/typio.toml", config_dir) < (int)sizeof(config_path));
+
+    ASSERT(ensure_dir(config_dir));
+    ASSERT(ensure_dir(data_dir));
+    ASSERT(ensure_dir(state_dir));
+    ASSERT(ensure_rime_user_data(data_dir));
+    ASSERT(write_file(config_path,
+                      "default_engine = \"rime\"\n"
+                      "[engines.rime]\n"
+                      "schema = \"luna_pinyin\"\n"));
+
+    config.config_dir = config_dir;
+    config.data_dir = data_dir;
+    config.state_dir = state_dir;
+    TEST_SET_ENGINE_DIRS(config);
+
+    TypioInstance *instance = typio_instance_new_with_config(&config);
+    ASSERT_NOT_NULL(instance);
+    ASSERT_EQ(typio_instance_init(instance), TYPIO_OK);
+    ASSERT_EQ(typio_registry_set_active_keyboard(typio_instance_get_registry(instance), "rime"), TYPIO_OK);
+    typio_instance_set_status_icon_changed_callback(instance, capture_status_icon, &capture);
+
+    TypioInputContext *ctx = typio_instance_create_context(instance);
+    ASSERT_NOT_NULL(ctx);
+    typio_input_context_set_commit_callback(ctx, capture_commit, &capture);
+    typio_input_context_set_composition_callback(ctx, capture_composition, &capture);
+    typio_input_context_focus_in(ctx);
+
+    n_key = key_event_for_char('n');
+    i_key = key_event_for_char('i');
+    ASSERT_NOT_NULL(n_key);
+    ASSERT_NOT_NULL(i_key);
+
+    ASSERT(typio_input_context_process_key(ctx, n_key));
+    ASSERT(typio_input_context_process_key(ctx, i_key));
+    ASSERT(capture.candidate_count > 0 || (capture.preedit_text && *capture.preedit_text));
+
+    free_capture(&capture);
+
+    shift_press = bare_shift_event(TYPIO_EVENT_KEY_PRESS);
+    shift_release = bare_shift_event(TYPIO_EVENT_KEY_RELEASE);
+    ASSERT_NOT_NULL(shift_press);
+    ASSERT_NOT_NULL(shift_release);
+
+    ASSERT(typio_input_context_process_key(ctx, shift_press));
+    ASSERT(typio_input_context_process_key(ctx, shift_release));
+
+    ASSERT(capture.commit_text != nullptr);
+    ASSERT_STR_EQ(capture.commit_text, "ni");
+
+    ASSERT(capture.status_icon != nullptr);
+    ASSERT_STR_EQ(capture.status_icon, "typio-rime-latin-symbolic");
+
+    const TypioPreedit *preedit = typio_input_context_get_preedit(ctx);
+    ASSERT(preedit == nullptr || preedit->segment_count == 0);
+
+    typio_key_event_free(n_key);
+    typio_key_event_free(i_key);
+    typio_key_event_free(shift_press);
+    typio_key_event_free(shift_release);
+    free_capture(&capture);
+    typio_instance_destroy_context(instance, ctx);
+    typio_instance_free(instance);
+}
+
 int main(void) {
     setenv("TYPIO_RIME_SYNC_DEPLOY", "1", 1);
     printf("Running rime integration tests:\n");
@@ -918,6 +1004,7 @@ int main(void) {
     run_test_selection_navigation_only_updates_candidates();
     run_test_invalid_configured_schema_falls_back_to_available_schema();
     run_test_deploy_rime_config_rebuilds_generated_yaml();
+    run_test_bare_shift_during_composition_commits_and_toggles();
     printf("\nPassed %d/%d tests\n", tests_passed, tests_run);
     return 0;
 }

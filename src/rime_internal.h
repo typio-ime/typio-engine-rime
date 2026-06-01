@@ -104,6 +104,8 @@ typedef struct TypioRimeSession {
     RimeSessionId session_id;
     uint32_t deploy_id;
     TypioRimeStatusBuf statusbuf;  /* storage for get_status's borrowed result */
+    bool shift_held;
+    bool shift_only;
 } TypioRimeSession;
 
 /* -------------------------------------------------------------------------- */

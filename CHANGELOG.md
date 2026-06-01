@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix bare Shift key during composition leaving stale preedit. The engine now
+  explicitly handles bare Shift press/release instead of relying on librime's
+  schema-dependent `key_binder`. On Shift release (when no other keys were pressed
+  during the hold), the engine commits the raw preedit text (e.g., typed pinyin),
+  clears the composition, and toggles `ascii_mode` via librime's `set_option` API.
+  This prevents the candidate panel from disappearing while the preedit remains
+  underlined and unresponsive to subsequent input.
+
 ## [0.0.3] - 2026-06-01
 
 ### Fixed

@@ -159,15 +159,28 @@ TYPIO_EVENT_KEY_RELEASE → TYPIO_RIME_RELEASE_MASK (1 << 30)
 ```
 1. Escape key: if there is preedit / candidates, reset and consume
 2. Get / create session (if deploying, show waiting message)
-3. Call api->process_key(session_id, keysym, mask)
-4. Mode detection (fallback): if Shift is pressed, poll get_option("ascii_mode")
-   and notify mode change.  Primary mode changes come from the notification
-   handler ("option" / "ascii_mode" events).
+3. Bare Shift handling (engine-managed, bypasses librime key_binder):
+   - Shift press: set shift_held + shift_only flags, consume immediately
+   - Bare Shift release (no other keys pressed during hold):
+     a. Extract raw ASCII from preedit and commit as text
+     b. Clear librime composition
+     c. Toggle ascii_mode via set_option()
+     d. Clear Typio composition and publish status
+   - Non-bare Shift release: consume without side effects
+   - Any non-Shift key press clears shift_only flag
+4. Call api->process_key(session_id, keysym, mask) for all other keys
 5. If handled:
    a. flush_commit() — retrieve committed text and commit to Typio
    b. sync_context() — sync preedit and candidates to TypioInputContext
 6. Return: COMMITTED / COMPOSING / HANDLED / NOT_HANDLED
 ```
+
+The bare Shift handler runs before `api->process_key` to avoid librime's
+schema-dependent `key_binder` behavior. Different Rime schemas bind Shift
+differently (or not at all), which previously caused the candidate panel to
+disappear while the preedit remained underlined and unresponsive. By handling
+Shift at the engine boundary, the behavior is deterministic: bare Shift always
+commits raw input and toggles mode, regardless of schema configuration.
 
 ## 6. Candidate & Preedit Synchronization
 
@@ -281,8 +294,15 @@ The Rime engine exposes two modes:
 | ASCII   | `LATIN`   | A     | `typio-rime-latin`  |
 
 - Mode is determined by Rime's `ascii_mode` option
-- **Notification-driven** (primary): the notification handler receives `"option"` / `"ascii_mode"` events from librime and caches the value in `TypioRimeState`.  Mode changes are pushed to Typio via `typio_instance_notify_mode()` immediately.
-- **Shift fallback**: if a notification was missed (e.g. older librime or race during handler registration), Shift key detection in `process_key` polls `get_option("ascii_mode")` as a fallback.
+- **Engine-managed bare Shift** (primary): the engine intercepts bare Shift
+  press/release at the `process_key` boundary, bypassing librime's schema-dependent
+  `key_binder`. On bare Shift release, the engine commits raw preedit, clears
+  composition, and toggles `ascii_mode` via `set_option("ascii_mode", ...)`.
+  This guarantees deterministic behavior regardless of schema configuration.
+- **Notification-driven** (secondary): the notification handler receives
+  `"option"` / `"ascii_mode"` events from librime for mode changes triggered by
+  other means (e.g., `Shift+Space`, F4 menu, schema hotkey) and pushes them to
+  Typio via `typio_instance_notify_mode()`.
 - **Explicit toggle**: set `ascii_mode` option via `set_mode("ascii" / "chinese")`
 - **Persistence**: mode state is preserved for the lifetime of the session
 
@@ -290,9 +310,9 @@ The Rime engine exposes two modes:
 
 | Event      | Behavior                                                                 |
 |-----------|--------------------------------------------------------------------------|
-| `focus_in` | Get / create session, sync current context state                         |
+| `focus_in` | Get / create session, reset `shift_held`/`shift_only` flags, sync current context state                         |
 | `focus_out`| `reset()` — clear screen, but keep the session                           |
-| `reset`    | `clear_composition()` + clear Typio preedit / candidates + restore mode notification |
+| `reset`    | Clear `shift_held`/`shift_only` flags, `clear_composition()` + clear Typio preedit / candidates + restore mode notification |
 
 ## 11. Interaction Points with the Typio Framework
 
