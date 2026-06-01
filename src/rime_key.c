@@ -49,17 +49,13 @@ void typio_rime_reset_shift_state(TypioRimeSession *session) {
 /**
  * Select the keysym to send to librime.
  *
- * For Shift+letter, send the base (lowercase) keysym + Shift mask so
- * librime's ascii_composer can match `Shift+<letter>` bindings. For
- * all other keys (symbols, Shift+symbol, unshifted), send the effective
- * keysym unchanged so librime's punctuator sees the correct character.
+ * Always pass through the effective keysym unchanged. librime's
+ * ascii_composer detects Shift+letter from the modifier mask, not
+ * from the keysym case. Remapping to base_keysym caused the first
+ * Shift+letter during composition to be treated as a plain letter
+ * by librime's speller (keysym 'a' looks like pinyin input).
  */
 uint32_t typio_rime_translate_keysym(const TypioKeyEvent *event) {
-    if (event->struct_size >= offsetof(TypioKeyEvent, base_keysym) + sizeof(uint32_t)
-        && event->base_keysym >= 'a' && event->base_keysym <= 'z'
-        && (event->modifiers & TYPIO_MOD_SHIFT)) {
-        return event->base_keysym;
-    }
     return event->keysym;
 }
 
