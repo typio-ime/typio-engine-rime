@@ -266,7 +266,7 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
 
     uint32_t rime_keysym = event->keysym;
     if (event->struct_size >= offsetof(TypioKeyEvent, base_keysym) + sizeof(uint32_t)
-        && event->base_keysym != 0
+        && event->base_keysym >= 'a' && event->base_keysym <= 'z'
         && (event->modifiers & TYPIO_MOD_SHIFT)) {
         rime_keysym = event->base_keysym;
     }
