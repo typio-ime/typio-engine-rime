@@ -3,7 +3,6 @@
  * @brief Configuration loading and cleanup for the Rime engine
  */
 
-#include "path_expand.h"
 #include "rime_internal.h"
 
 void typio_rime_free_config(TypioRimeConfig *config) {
@@ -20,9 +19,8 @@ void typio_rime_free_config(TypioRimeConfig *config) {
 TypioResult typio_rime_load_config(TypioEngine *engine,
                                    TypioInstance *instance,
                                    TypioRimeConfig *config) {
-    const char *data_dir;
+    const char *engine_data_dir;
     TypioConfig *engine_config = nullptr;
-    char *default_user_dir;
 
     if (!engine || !instance || !config) {
         return TYPIO_ERROR_INVALID_ARGUMENT;
@@ -31,9 +29,11 @@ TypioResult typio_rime_load_config(TypioEngine *engine,
     memset(config, 0, sizeof(*config));
     config->schema = typio_strdup(TYPIO_RIME_DEFAULT_SCHEMA);
     config->shared_data_dir = typio_strdup(TYPIO_RIME_SHARED_DATA_DIR);
-    data_dir = typio_instance_get_data_dir(instance);
-    default_user_dir = typio_path_join(data_dir, "rime");
-    config->user_data_dir = default_user_dir;
+
+    engine_data_dir = typio_instance_get_engine_data_dir(instance, "rime");
+    if (engine_data_dir && *engine_data_dir) {
+        config->user_data_dir = typio_strdup(engine_data_dir);
+    }
 
     if (!config->schema || !config->shared_data_dir || !config->user_data_dir) {
         typio_rime_free_config(config);
@@ -45,29 +45,15 @@ TypioResult typio_rime_load_config(TypioEngine *engine,
         return TYPIO_OK;
     }
 
-    /* The engine owns its schema selection, persisted as engines.rime.schema. */
     const char *persisted = typio_config_get_string(engine_config, "schema", nullptr);
     if (persisted && *persisted) {
         free(config->schema);
         config->schema = typio_strdup(persisted);
     }
 
-    const char *shared_data_dir = typio_config_get_string(engine_config, "shared_data_dir", nullptr);
-    const char *user_data_dir = typio_config_get_string(engine_config, "user_data_dir", nullptr);
-    if (shared_data_dir && *shared_data_dir) {
-        char *expanded = typio_rime_expand_path(shared_data_dir);
-        free(config->shared_data_dir);
-        config->shared_data_dir = expanded;
-    }
-    if (user_data_dir && *user_data_dir) {
-        char *expanded = typio_rime_expand_path(user_data_dir);
-        free(config->user_data_dir);
-        config->user_data_dir = expanded;
-    }
-
     typio_config_free(engine_config);
 
-    if (!config->schema || !config->shared_data_dir || !config->user_data_dir) {
+    if (!config->schema) {
         typio_rime_free_config(config);
         return TYPIO_ERROR_OUT_OF_MEMORY;
     }

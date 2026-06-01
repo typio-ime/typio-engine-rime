@@ -396,22 +396,6 @@ static const TypioConfigField typio_rime_config_fields[] = {
         .ui_section = "rime",
         .runtime_property = NULL,
     },
-    {
-        .key = "engines.rime.shared_data_dir",
-        .type = TYPIO_FIELD_STRING,
-        .def.s = "",
-        .ui_label = "Shared data directory",
-        .ui_section = "rime",
-        .runtime_property = NULL,
-    },
-    {
-        .key = "engines.rime.user_data_dir",
-        .type = TYPIO_FIELD_STRING,
-        .def.s = "",
-        .ui_label = "User data directory",
-        .ui_section = "rime",
-        .runtime_property = NULL,
-    },
 };
 
 TYPIO__EXTERN_C TYPIO_EXPORT const TypioConfigField *

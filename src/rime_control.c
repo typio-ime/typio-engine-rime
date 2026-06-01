@@ -128,11 +128,6 @@ const TypioEngineSurfaceOps typio_rime_surface_ops = {
 /*
  * `engines.rime.schema` — re-apply the selected schema live by routing
  * through `reload_config`, which already covers the librime-side work.
- *
- * `engines.rime.shared_data_dir` / `user_data_dir` — librime resolves these
- * during `setup`/`initialize` and cannot rebind them without re-running
- * deployment. We log a warning here so the host surfaces the restart
- * requirement; persistence is already in the unified config tree.
  */
 
 void typio_rime_on_config_change(TypioEngine *engine,
@@ -140,7 +135,7 @@ void typio_rime_on_config_change(TypioEngine *engine,
                                  const char *value) {
     TypioRimeState *state;
 
-    (void)value; /* the canonical value is read back from the config tree */
+    (void)value;
 
     if (!engine || !key) {
         return;
@@ -152,12 +147,6 @@ void typio_rime_on_config_change(TypioEngine *engine,
 
     if (strcmp(key, "engines.rime.schema") == 0) {
         typio_rime_reload_config(engine);
-        return;
-    }
-    if (strcmp(key, "engines.rime.shared_data_dir") == 0 ||
-        strcmp(key, "engines.rime.user_data_dir") == 0) {
-        typio_log_warning(
-            "Rime data directories require restarting Typio to take effect");
         return;
     }
 }
