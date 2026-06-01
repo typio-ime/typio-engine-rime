@@ -88,7 +88,7 @@ typedef struct TypioRimeState {
     TypioRimeControl control;
 } TypioRimeState;
 
-/* Backing storage for a TypioEngineStatus built from RimeStatus. The status's
+/* Backing storage for a TypioKeyboardEngineStatus built from RimeStatus. The status's
  * const char* fields point into these buffers, so the buffer must outlive the
  * borrowed status pointer (see typio_rime_get_status). */
 typedef struct TypioRimeStatusBuf {
@@ -96,7 +96,7 @@ typedef struct TypioRimeStatusBuf {
     char profile_label[128];  /* Rime schema name, e.g. "朙月拼音" */
     char icon[160];           /* Resolved freedesktop icon name */
     char display_label[128];   /* schema name or "中" / "A" */
-    TypioEngineStatus status;
+    TypioKeyboardEngineStatus status;
 } TypioRimeStatusBuf;
 
 typedef struct TypioRimeSession {
@@ -178,7 +178,7 @@ bool typio_rime_sync_context(TypioRimeSession *session,
 /* Read librime's live RimeStatus, push the derived status to the framework, and
  * mirror any librime-initiated schema change back into the config tree. */
 void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id);
-const TypioEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
+const TypioKeyboardEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
                                                 TypioInputContext *ctx);
 TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
                                    TypioInputContext *ctx,

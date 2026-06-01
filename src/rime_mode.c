@@ -8,7 +8,7 @@
  *
  * Both are derived from the single source of truth — librime's RimeStatus —
  * never from a shadow copy. `typio_rime_publish_status` reads the live status
- * and pushes a TypioEngineStatus to the framework; the tray/panel re-resolve
+ * and pushes a TypioKeyboardEngineStatus to the framework; the tray/panel re-resolve
  * from there. Schema *switching* is owned by the config-schema layer
  * (ADR-0008); this file only *reflects* whatever librime currently reports,
  * and mirrors librime-initiated schema switches back into the config tree so
@@ -73,11 +73,17 @@ static void rime_fill_status(TypioRimeState *state, RimeSessionId session_id,
         snprintf(buf->display_label, sizeof(buf->display_label), "中");
     }
 
-    buf->status.engagement = ascii ? TYPIO_ENGAGE_PASSTHROUGH : TYPIO_ENGAGE_ACTIVE;
+    buf->status.engagement = ascii ? TYPIO_KB_ENGAGE_PASSTHROUGH : TYPIO_KB_ENGAGE_ACTIVE;
     buf->status.profile_id = buf->profile_id;
     buf->status.profile_label = buf->profile_label;
     buf->status.display_label = buf->display_label;
     buf->status.icon_name = buf->icon;
+    /* ascii_mode behaves like a plain Latin keyboard — what you type is what you
+     * get, so it never warrants an unprompted announcement. Composing in a CJK
+     * schema can surprise the user who starts typing without looking, so it is
+     * notable. See docs/dev/keyboard-status-salience.md (libtypio). */
+    buf->status.salience = ascii ? TYPIO_STATUS_SALIENCE_QUIET
+                                 : TYPIO_STATUS_SALIENCE_NOTABLE;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -125,20 +131,21 @@ void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id) {
     }
 
     rime_fill_status(state, session_id, &buf);
-    typio_instance_notify_status(engine->instance, &buf.status);
+    typio_instance_notify_keyboard_status(engine->instance, &buf.status);
     rime_writeback_schema(engine, buf.profile_id);
 }
 
 /* Fallback used before any session/status exists. */
-static const TypioEngineStatus typio_rime_default_status = {
-    .engagement = TYPIO_ENGAGE_ACTIVE,
+static const TypioKeyboardEngineStatus typio_rime_default_status = {
+    .engagement = TYPIO_KB_ENGAGE_ACTIVE,
     .profile_id = "",
     .profile_label = NULL,
     .display_label = "中",
     .icon_name = "typio-rime-symbolic",
+    .salience = TYPIO_STATUS_SALIENCE_NOTABLE,
 };
 
-const TypioEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
+const TypioKeyboardEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
                                                 TypioInputContext *ctx) {
     TypioEngine *base = (TypioEngine *)engine;
     TypioRimeState *state = typio_engine_get_user_data(base);
