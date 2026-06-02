@@ -1,5 +1,5 @@
 project('typio-engine-rime', 'c',
-    version: '0.1.0',
+    version: '0.1.1',
     default_options: [
         'c_std=c23',
         'warning_level=2',
@@ -40,10 +40,11 @@ rime_engine = shared_module('typio_engine_rime',
 )
 
 # ── Icons (freedesktop/XDG icon-theme layout) ──────────────────────────────
-# Installed under the system hicolor theme so panels resolve them through
-# the standard XDG icon lookup path rather than a bundled engine directory.
-install_subdir('data/icons',
-    install_dir: get_option('datadir'),
+# Installed under the hicolor theme so panels resolve them through the
+# standard XDG icon lookup path regardless of prefix (~/.local, /usr/local,
+# /usr, etc.).
+install_subdir('data/icons/hicolor',
+    install_dir: get_option('datadir') / 'icons',
 )
 
 if get_option('build_tests')

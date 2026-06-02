@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-02
+
+### Fixed
+
+- Fix icon installation path to conform to the freedesktop/XDG icon-theme
+  specification. Icons are now installed under `<datadir>/icons/hicolor/`
+  instead of `<datadir>/data/icons/hicolor/`, so they are discoverable by
+  standard icon lookups regardless of install prefix (`~/.local`, `/usr/local`,
+  `/usr`, etc.).
+
 ## [0.1.0] - 2026-06-02
 
 ## [0.0.4] - 2026-06-01
