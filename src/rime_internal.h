@@ -88,15 +88,15 @@ typedef struct TypioRimeState {
     TypioRimeControl control;
 } TypioRimeState;
 
-/* Backing storage for a TypioKeyboardEngineStatus built from RimeStatus. The status's
+/* Backing storage for a TypioKeyboardEngineMode built from RimeStatus. The mode's
  * const char* fields point into these buffers, so the buffer must outlive the
- * borrowed status pointer (see typio_rime_get_status). */
+ * borrowed mode pointer (see typio_rime_get_active_mode). */
 typedef struct TypioRimeStatusBuf {
-    char profile_id[128];     /* Rime schema id, e.g. "luna_pinyin" */
-    char profile_label[128];  /* Rime schema name, e.g. "朙月拼音" */
+    char mode_id[128];       /* Rime schema id, e.g. "luna_pinyin" */
+    char mode_label[128];    /* Rime schema name, e.g. "朙月拼音" */
     char icon[160];           /* Resolved freedesktop icon name */
     char display_label[128];   /* schema name or "中" / "A" */
-    TypioKeyboardEngineStatus status;
+    TypioKeyboardEngineMode status;
 } TypioRimeStatusBuf;
 
 typedef struct TypioRimeSession {
@@ -180,11 +180,13 @@ bool typio_rime_sync_context(TypioRimeSession *session,
 /* Read librime's live RimeStatus, push the derived status to the framework, and
  * mirror any librime-initiated schema change back into the config tree. */
 void typio_rime_publish_status(TypioEngine *engine, RimeSessionId session_id);
-const TypioKeyboardEngineStatus *typio_rime_get_status(TypioKeyboardEngine *engine,
-                                                TypioInputContext *ctx);
-TypioResult typio_rime_set_status(TypioKeyboardEngine *engine,
-                                   TypioInputContext *ctx,
-                                   const char *mode_id);
+const TypioKeyboardEngineMode *typio_rime_list_modes(TypioKeyboardEngine *engine,
+                                                     size_t *out_count);
+const TypioKeyboardEngineMode *typio_rime_get_active_mode(TypioKeyboardEngine *engine,
+                                                  TypioInputContext *ctx);
+TypioResult typio_rime_set_active_mode(TypioKeyboardEngine *engine,
+                                       TypioInputContext *ctx,
+                                       const char *mode_id);
 
 /* -------------------------------------------------------------------------- */
 /* Key handling (rime_key.c)                                                  */

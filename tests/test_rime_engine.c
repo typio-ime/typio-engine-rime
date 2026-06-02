@@ -583,7 +583,7 @@ TEST(refocus_preserves_latin_mode) {
     typio_input_context_focus_out(ctx);
     typio_input_context_focus_in(ctx);
 
-    const TypioKeyboardEngineStatus *mode = typio_instance_get_last_keyboard_status(instance);
+    const TypioKeyboardEngineMode *mode = typio_instance_get_last_keyboard_mode(instance);
     ASSERT_NOT_NULL(mode);
     ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin-symbolic");
 
@@ -650,7 +650,7 @@ TEST(engine_switch_preserves_latin_mode_within_context) {
     ASSERT_EQ(typio_registry_set_active_keyboard(registry, "basic"), TYPIO_OK);
     ASSERT_EQ(typio_registry_set_active_keyboard(registry, "rime"), TYPIO_OK);
 
-    const TypioKeyboardEngineStatus *mode = typio_instance_get_last_keyboard_status(instance);
+    const TypioKeyboardEngineMode *mode = typio_instance_get_last_keyboard_mode(instance);
     ASSERT_NOT_NULL(mode);
     ASSERT_STR_EQ(mode->icon_name, "typio-rime-latin-symbolic");
 

@@ -352,8 +352,9 @@ static const TypioEngineBaseOps typio_rime_base_ops = {
 
 static const TypioKeyboardEngineOps typio_rime_keyboard_ops = {
     .process_key = typio_rime_process_key,
-    .get_status = typio_rime_get_status,
-    .set_status = typio_rime_set_status,
+    .list_modes = typio_rime_list_modes,
+    .get_active_mode = typio_rime_get_active_mode,
+    .set_active_mode = typio_rime_set_active_mode,
 };
 
 static TypioKeyboardEngine *typio_rime_engine_create(void) {
