@@ -1,5 +1,5 @@
 project('typio-engine-rime', 'c',
-    version: '0.0.4',
+    version: '0.1.0',
     default_options: [
         'c_std=c23',
         'warning_level=2',
