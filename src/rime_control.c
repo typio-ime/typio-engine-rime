@@ -27,6 +27,9 @@ static void *setup_thread_func(void *arg) {
     TypioResult res = typio_rime_setup_rime_ice(job->user_data_dir);
     if (res != TYPIO_OK) {
         typio_log_error("rime: setup failed");
+        typio_rime_set_availability(job->state,
+                                    TYPIO_ENGINE_FAILED,
+                                    "Rime setup failed");
         free(job->user_data_dir);
         free(job);
         return NULL;
@@ -51,6 +54,7 @@ static void *setup_thread_func(void *arg) {
     typio_rime_run_maintenance(job->state, true);
     job->state->api->join_maintenance_thread();
     job->state->maintenance_done = true;
+    typio_rime_set_availability(job->state, TYPIO_ENGINE_READY, NULL);
     typio_log_info("rime: setup and deployment complete");
 
     free(job->user_data_dir);
@@ -88,8 +92,14 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
         if (!typio_rime_ensure_dir(state->config.user_data_dir)) {
             return TYPIO_ERROR;
         }
+        typio_rime_set_availability(state,
+                                    TYPIO_ENGINE_PREPARING,
+                                    "Rime setup in progress");
         SetupJob *job = calloc(1, sizeof(SetupJob));
         if (!job) {
+            typio_rime_set_availability(state,
+                                        TYPIO_ENGINE_FAILED,
+                                        "Rime setup failed");
             return TYPIO_ERROR_OUT_OF_MEMORY;
         }
         job->user_data_dir = strdup(state->config.user_data_dir);
@@ -97,6 +107,9 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
         job->instance = engine->instance;
         if (!job->user_data_dir) {
             free(job);
+            typio_rime_set_availability(state,
+                                        TYPIO_ENGINE_FAILED,
+                                        "Rime setup failed");
             return TYPIO_ERROR_OUT_OF_MEMORY;
         }
         pthread_t tid;
@@ -104,6 +117,9 @@ static TypioResult rime_invoke_command(TypioEngine *engine, const char *id) {
             typio_log_error("rime: failed to spawn setup thread");
             free(job->user_data_dir);
             free(job);
+            typio_rime_set_availability(state,
+                                        TYPIO_ENGINE_FAILED,
+                                        "Rime setup thread failed");
             return TYPIO_ERROR;
         }
         pthread_detach(tid);

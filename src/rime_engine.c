@@ -31,11 +31,18 @@ static void typio_rime_notification(void *context_object,
         if (strcmp(message_value, "start") == 0) {
             typio_log_info("Rime: deployment started");
             state->maintenance_done = false;
+            typio_rime_set_availability(state,
+                                        TYPIO_ENGINE_PREPARING,
+                                        "Rime deployment in progress");
         } else if (strcmp(message_value, "success") == 0) {
             state->maintenance_done = true;
             typio_log_info("Rime: deployment finished");
+            typio_rime_set_availability(state, TYPIO_ENGINE_READY, NULL);
         } else if (strcmp(message_value, "failure") == 0) {
             typio_log_error("Rime: deployment failed");
+            typio_rime_set_availability(state,
+                                        TYPIO_ENGINE_FAILED,
+                                        "Rime deployment failed");
         }
         return;
     }
@@ -92,6 +99,8 @@ static TypioResult typio_rime_init(TypioEngine *engine, TypioInstance *instance)
     }
 
     state->engine = engine;
+    state->availability = TYPIO_ENGINE_UNINITIALIZED;
+    state->availability_reason = "Rime initializing";
     state->api = rime_get_api();
     if (!state->api) {
         typio_rime_free_config(&state->config);
@@ -121,6 +130,9 @@ static TypioResult typio_rime_init(TypioEngine *engine, TypioInstance *instance)
     state->api->initialize(&state->traits);
 
     state->initialized = true;
+    typio_rime_set_availability(state,
+                                TYPIO_ENGINE_PREPARING,
+                                "Rime deployment check in progress");
 
     /* Kick off deployment if needed */
     typio_rime_ensure_deployed(state);
@@ -173,6 +185,15 @@ static void typio_rime_focus_out(TypioEngine *engine, TypioInputContext *ctx) {
     typio_rime_reset(engine, ctx);
 }
 
+static TypioEngineAvailability typio_rime_availability(TypioEngine *engine) {
+    TypioRimeState *state = typio_engine_get_user_data(engine);
+
+    if (!state) {
+        return TYPIO_ENGINE_UNINITIALIZED;
+    }
+    return state->availability;
+}
+
 static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
                                                      TypioInputContext *ctx,
                                                      const TypioKeyEvent *event) {
@@ -186,6 +207,10 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
 
     if (!engine || !ctx || !event) {
         return TYPIO_KEY_NOT_HANDLED;
+    }
+
+    if (typio_rime_availability(base) != TYPIO_ENGINE_READY) {
+        return TYPIO_KEY_HANDLED;
     }
 
     is_release = (event->type == TYPIO_EVENT_KEY_RELEASE);
@@ -203,7 +228,7 @@ static TypioKeyProcessResult typio_rime_process_key(TypioKeyboardEngine *engine,
 
     session = typio_rime_get_session(base, ctx, true);
     if (!session) {
-        return TYPIO_KEY_NOT_HANDLED;
+        return TYPIO_KEY_HANDLED;
     }
 
     /* Bare Shift: engine-managed, bypasses librime's ascii_composer. */
@@ -348,6 +373,7 @@ static const TypioEngineBaseOps typio_rime_base_ops = {
     .reset = typio_rime_reset,
     .reload_config = typio_rime_reload_config,
     .on_config_change = typio_rime_on_config_change,
+    .availability = typio_rime_availability,
 };
 
 static const TypioKeyboardEngineOps typio_rime_keyboard_ops = {

@@ -80,6 +80,8 @@ typedef struct TypioRimeState {
     TypioRimeConfig config;
     bool initialized;
     bool maintenance_done;
+    TypioEngineAvailability availability;
+    const char *availability_reason;
     uint32_t deploy_id;
     /* Back-pointer to the owning engine for notification callbacks */
     struct TypioEngine *engine;
@@ -146,6 +148,9 @@ void typio_rime_invalidate_generated_yaml(TypioRimeState *state);
 bool typio_rime_run_maintenance(TypioRimeState *state, bool full_check);
 bool typio_rime_is_maintaining(TypioRimeState *state);
 bool typio_rime_ensure_deployed(TypioRimeState *state);
+void typio_rime_set_availability(TypioRimeState *state,
+                                  TypioEngineAvailability availability,
+                                  const char *reason);
 
 /* Setup (rime_setup.c)                                                      */
 

@@ -8,6 +8,23 @@
 
 #include "rime_internal.h"
 
+void typio_rime_set_availability(TypioRimeState *state,
+                                  TypioEngineAvailability availability,
+                                  const char *reason) {
+    if (!state) {
+        return;
+    }
+
+    state->availability = availability;
+    state->availability_reason = reason;
+
+    if (state->engine && state->engine->instance) {
+        typio_instance_notify_engine_availability(state->engine->instance,
+                                                  availability,
+                                                  reason);
+    }
+}
+
 void typio_rime_invalidate_generated_yaml(TypioRimeState *state) {
     char *build_dir;
     DIR *dir;
@@ -65,14 +82,21 @@ bool typio_rime_run_maintenance(TypioRimeState *state, bool full_check) {
 
     if (!state->api->start_maintenance(full_check ? True : False)) {
         typio_log_error("Rime deployment failed to start");
+        typio_rime_set_availability(state,
+                                    TYPIO_ENGINE_FAILED,
+                                    "Rime deployment failed to start");
         return false;
     }
 
     if (sync) {
         state->api->join_maintenance_thread();
         state->maintenance_done = true;
+        typio_rime_set_availability(state, TYPIO_ENGINE_READY, NULL);
     } else {
         state->maintenance_done = false;
+        typio_rime_set_availability(state,
+                                    TYPIO_ENGINE_PREPARING,
+                                    "Rime deployment in progress");
     }
 
     return true;
@@ -116,5 +140,6 @@ bool typio_rime_ensure_deployed(TypioRimeState *state) {
 
     /* No maintenance needed or it's already finished */
     state->maintenance_done = true;
+    typio_rime_set_availability(state, TYPIO_ENGINE_READY, NULL);
     return true;
 }
