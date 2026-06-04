@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-04
+
+### Changed
+
+- **Packaging guidance for staged installs.** Document Meson `--destdir`
+  staging, expected package artifacts, explicit staging validation, and the
+  required runtime role of `libcurl`.
+- **Explicit development engine directory.** Update local debugging docs to
+  use an explicit `--engine-dir` override instead of relying on implicit
+  user-directory discovery.
+
 ## [0.1.3] - 2026-06-05
 
 ### Fixed
