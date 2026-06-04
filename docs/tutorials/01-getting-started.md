@@ -57,19 +57,19 @@ When the build finishes you will have `build/libtypio_engine_rime.so`.
 
 ## Step 3 — Install locally for debugging
 
-While testing or developing, the quickest way to make the engine available
-to Typio is to copy the freshly built shared module directly into the user
-engine directory. This avoids `sudo` and does not require reconfiguring the
-build with a custom prefix.
+While testing or developing, copy the freshly built shared module into an
+explicit development engine directory. This avoids `sudo` and does not require
+reconfiguring the build with a custom prefix.
 
 ```sh
-mkdir -p ~/.local/share/typio/engines
-cp build/libtypio_engine_rime.so ~/.local/share/typio/engines/
+mkdir -p build/engines
+cp build/libtypio_engine_rime.so build/engines/
+typio --engine-dir "$PWD/build/engines" --list
 ```
 
-Typio hosts scan `~/.local/share/typio/engines/` at runtime. After copying
-the file, restart Typio (or the Typio-based application you are testing) so
-it rescans the directory and loads the new plugin.
+Packaged Typio hosts scan the system engine directory by default. Development
+engine directories must be enabled explicitly with `--engine-dir` or
+`TYPIO_ENGINE_DIR`.
 
 ### Rime configuration files
 

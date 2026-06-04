@@ -27,18 +27,20 @@ PKG_CONFIG_PATH=/path/to/libtypio/target/release meson setup build
 
 ### Local debugging install
 
-For quick iteration you can copy the built plugin directly into a user-level
-engine directory instead of running a system install:
+For quick iteration, keep the built plugin in an explicit development engine
+directory and point the Typio host at that directory:
 
 ```sh
 meson setup build
 ninja -C build
-mkdir -p ~/.local/share/typio/engines
-cp build/libtypio_engine_rime.so ~/.local/share/typio/engines/
+mkdir -p build/engines
+cp build/libtypio_engine_rime.so build/engines/
+typio --engine-dir "$PWD/build/engines" --list
 ```
 
-Typio hosts scan `~/.local/share/typio/engines/` at runtime, so the engine
-will be discovered after restarting the host.
+Packaged Typio hosts discover system-installed engines from
+`<prefix>/<libdir>/typio/engines`. Development engine directories are explicit
+runtime overrides via `--engine-dir` or `TYPIO_ENGINE_DIR`.
 
 ## Configuration
 
