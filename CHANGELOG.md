@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Null context guard in `typio_rime_get_session`.** Added `!ctx` check
+  before calling `typio_input_context_get_property`, preventing SIGSEGV
+  when the engine is queried with a null input context during early
+  initialization.
+
 ## [0.1.2] - 2026-06-03
 
 ### Fixed

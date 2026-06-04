@@ -131,7 +131,7 @@ TypioRimeSession *typio_rime_get_session(TypioEngine *engine,
     TypioRimeState *state = typio_engine_get_user_data(engine);
     TypioRimeSession *session;
 
-    if (!state || !state->api) {
+    if (!state || !state->api || !ctx) {
         return nullptr;
     }
 
