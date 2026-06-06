@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Report the active keyboard mode after every mode-affecting request: the
+  worker now appends an `ACTIVE_MODE` line to `process-key`, `set-active-mode`,
+  `reset`, and `focus-in` replies, so the host's indicator and tray track
+  Rime's internal mode (中/英, schema) over the IPC boundary.
+- `MODE` / `ACTIVE_MODE` lines now carry a trailing `salience` field
+  (`0` quiet, `1` notable) after `is_active`, preserving the engine's on-focus
+  auto-reveal intent.
+
 ## [0.2.0] - 2026-06-06
 
 ### Changed
