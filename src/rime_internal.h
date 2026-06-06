@@ -1,6 +1,6 @@
 /**
  * @file rime_internal.h
- * @brief Internal shared definitions for the Rime engine plugin
+ * @brief Internal shared definitions for the Rime engine worker
  *
  * This header declares data structures, constants, and function prototypes
  * used across all rime engine modules.  It should not be included by code

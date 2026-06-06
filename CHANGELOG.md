@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-06
+
+### Changed
+
+- Build and package Rime as a direct IPC worker executable
+  (`typio-engine-rime`) with a `typio-engine-rime.toml` manifest instead of a
+  shared engine library.
+- Install the private worker under `<libexecdir>/typio/engines` and the
+  manifest under `<datadir>/typio/engines`. Installed manifests contain the
+  absolute worker path.
+
 ## [0.1.4] - 2026-06-04
 
 ### Changed

@@ -1,0 +1,11 @@
+name = "rime"
+type = "keyboard"
+display_name = "Rime"
+description = "Chinese input engine powered by librime."
+author = "Typio"
+icon = "typio-rime-symbolic"
+language = "zh_CN"
+command = "@ENGINE_COMMAND@"
+args = []
+required = ["preedit", "candidates"]
+optional = ["prediction", "learning"]

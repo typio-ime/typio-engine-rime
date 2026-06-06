@@ -1,6 +1,6 @@
 /**
  * @file rime_engine.c
- * @brief Rime engine plugin entry point and TypioEngineBaseOps + TypioKeyboardEngineOps implementation
+ * @brief Rime engine entry point and TypioEngineBaseOps + TypioKeyboardEngineOps implementation
  *
  * Integration with librime 1.16.1:
  *   - Uses set_notification_handler for deploy / option events instead of
@@ -397,7 +397,7 @@ static TypioKeyboardEngine *typio_rime_engine_create(void) {
 /* Config schema (ADR-0008)                                                   */
 /* -------------------------------------------------------------------------- */
 /*
- * Declared at plugin load time so the host knows about rime's knobs without
+ * Declared before worker initialization so the host knows about rime's knobs without
  * having to instantiate the engine. The librime-runtime schema choices are
  * intentionally not baked in here (they depend on what is installed); the
  * `schema` field is a free-form STRING and the engine validates the choice

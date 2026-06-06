@@ -6,15 +6,15 @@ This document describes how `typio-engine-rime` integrates with librime and how 
 
 ## 1. Architecture Overview
 
-Typio integrates librime via a **plugin engine**. The Rime engine lives in the `typio-engine-rime` repository, compiles to a shared library `libtypio_engine_rime.so`, and is loaded at runtime by the host's plugin loader.
+Typio integrates librime via an out-of-process engine worker. The Rime engine lives in the `typio-engine-rime` repository, compiles to the `typio-engine-rime` executable, and is discovered at runtime through `typio-engine-rime.toml`.
 
 ```mermaid
 flowchart TD
     subgraph Daemon["Typio Daemon (Wayland IME)"]
-        Core["libtypio (engine manager)<br/>loads engines/libtypio_engine_rime.so"]
+        Core["libtypio (engine manager)<br/>starts typio-engine-rime"]
         Front[Wayland protocol frontend]
     end
-    subgraph Plugin["Rime Engine Plugin"]
+    subgraph Plugin["Rime Engine Worker"]
         Entry["rime_engine.c (entry point)"]
         Session["rime_session.c (session mgmt)"]
         Sync["rime_sync.c (context sync)"]
@@ -23,7 +23,7 @@ flowchart TD
         Key["rime_key.c (key handling)"]
         Config["rime_config.c (configuration)"]
         Path["path_expand.c (path helpers)"]
-        Lib["linked against libtypio_engine_rime.so"]
+        Lib["linked against librime + libtypio ABI"]
     end
     subgraph Librime["librime"]
         Schema[schema management]
@@ -326,7 +326,7 @@ The Rime engine exposes two modes:
 
 ### 11.1 Calling Typio APIs
 
-The Rime engine, as a plugin, interacts with Typio core via:
+The Rime engine interacts with Typio core via:
 
 **Input / Output** (see `libtypio` ADR-0006 — composition as state, commit as event):
 - `typio_input_context_set_composition(ctx, comp)` — set preedit + candidates atomically (an empty composition clears them)
@@ -369,25 +369,10 @@ This design separates mandatory lifecycle operations from keyboard-specific call
 
 ### 11.3 Build Integration
 
-**Cargo** (`typio-engine-rime/Cargo.toml`):
+**Meson** (`typio-engine-rime/meson.build`):
 
-```toml
-[package]
-name = "typio-engine-rime"
-version = "0.1.0"
-edition = "2021"
-
-[lib]
-name = "typio_engine_rime"
-crate-type = ["cdylib"]
-
-[dependencies]
-libc = "0.2"
-librime-sys = { path = "librime-sys" }
-```
-
-- Compiled as a `cdylib` (plugin `.so`)
-- Installed to the engine directory (default `${prefix}/lib/typio/engines/`)
+- Builds `typio-engine-rime` as a worker executable
+- Installs `typio-engine-rime.toml` to `<datadir>/typio/engines`
 - Discovers and links librime via `pkg-config`
 
 ## 12. librime Documentation & Links

@@ -39,16 +39,17 @@ meson install -C build --destdir "$pkgdir"
 ```
 
 Always fail the packaging step if the staging directory is empty or the expected
-plugin is missing:
+worker and manifest are missing:
 
 ```bash
-test -f "$pkgdir/usr/lib/typio/engines/libtypio_engine_rime.so"
+test -x "$pkgdir/usr/libexec/typio/engines/typio-engine-rime"
+test -f "$pkgdir/usr/share/typio/engines/typio-engine-rime.toml"
 test -f "$pkgdir/usr/share/icons/hicolor/scalable/apps/typio-rime-symbolic.svg"
 test -f "$pkgdir/usr/share/icons/hicolor/scalable/apps/typio-rime-latin-symbolic.svg"
 ```
 
-If the target distribution uses `/usr/lib64`, check
-`$pkgdir/usr/lib64/typio/engines/libtypio_engine_rime.so` instead.
+If the target distribution uses a non-default `libexecdir`, check that
+directory instead of `/usr/libexec`.
 
 ## Generic Package Pipeline
 
@@ -86,8 +87,8 @@ script = '''
 : "${STAGING_DIR:?STAGING_DIR is required}"
 cd source
 meson install -C build --destdir "$STAGING_DIR"
-test -f "$STAGING_DIR/usr/lib/typio/engines/libtypio_engine_rime.so" || \
-  test -f "$STAGING_DIR/usr/lib64/typio/engines/libtypio_engine_rime.so"
+test -x "$STAGING_DIR/usr/libexec/typio/engines/typio-engine-rime"
+test -f "$STAGING_DIR/usr/share/typio/engines/typio-engine-rime.toml"
 test -f "$STAGING_DIR/usr/share/icons/hicolor/scalable/apps/typio-rime-symbolic.svg"
 test -f "$STAGING_DIR/usr/share/icons/hicolor/scalable/apps/typio-rime-latin-symbolic.svg"
 '''
@@ -101,13 +102,14 @@ development metadata as `libcurl-devel` or `libcurl4-openssl-dev`.
 
 | Source | Destination | Description |
 |--------|-------------|-------------|
-| `libtypio_engine_rime.so` | `<libdir>/typio/engines/` | Engine plugin discovered by the host at runtime |
+| `typio-engine-rime` | `<libexecdir>/typio/engines/` | Private engine worker executable started by the host |
+| `typio-engine-rime.toml` | `<datadir>/typio/engines/` | Engine manifest discovered by the host at runtime |
 | `data/icons/hicolor/scalable/apps/typio-rime-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for Chinese input mode |
 | `data/icons/hicolor/scalable/apps/typio-rime-latin-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for ASCII (Latin) input mode |
 
 Default paths (with `--prefix=/usr`):
 
-- `libdir` → `/usr/lib` or `/usr/lib64`
+- `libexecdir` → `/usr/libexec`
 - `datadir` → `/usr/share`
 
 ## Runtime dependencies
@@ -115,7 +117,7 @@ Default paths (with `--prefix=/usr`):
 | Package | Reason |
 |---------|--------|
 | `librime` | Engine runtime library |
-| `libtypio` | Host framework that loads the engine plugin |
+| `libtypio` | Host framework that registers and calls the engine worker |
 | `libcurl` | Runtime library for the `setup` command |
 | Rime schema data (`rime-data` or similar) | Shared dictionaries and schemas for `shared_data_dir` |
 
@@ -125,7 +127,8 @@ their own schemas under `shared_data_dir` (default `/usr/share/rime-data`).
 
 ## Packaging checklist
 
-- [ ] Engine installs to `<libdir>/typio/engines/libtypio_engine_rime.so`
+- [ ] Worker installs to `<libexecdir>/typio/engines/typio-engine-rime`
+- [ ] Manifest installs to `<datadir>/typio/engines/typio-engine-rime.toml`
 - [ ] Icons install to `<datadir>/icons/hicolor/scalable/apps/`
 - [ ] `typio-engine-abi` or `libtypio` is listed as a build dependency
 - [ ] `librime` is listed as both build and runtime dependency

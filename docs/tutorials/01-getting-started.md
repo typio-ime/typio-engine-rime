@@ -1,12 +1,12 @@
 # Getting Started
 
-This tutorial walks you through building and installing the Rime engine
-plugin for the Typio input method framework.
+This tutorial walks you through building and installing the Rime engine worker
+for the Typio input method framework.
 
 You will:
 
 1. Verify your system has the required dependencies.
-2. Build the engine plugin.
+2. Build the engine worker.
 3. Install it to a local directory for testing.
 
 ## Prerequisites
@@ -45,31 +45,29 @@ If you want to run the test suite later, enable tests during configuration:
 meson setup build -Dbuild_tests=true
 ```
 
-## Step 2 — Build the plugin
+## Step 2 — Build the Worker
 
-Compile the shared module:
+Compile the worker executable:
 
 ```sh
 ninja -C build
 ```
 
-When the build finishes you will have `build/libtypio_engine_rime.so`.
+When the build finishes you will have `build/typio-engine-rime` and
+`build/typio-engine-rime.toml`.
 
 ## Step 3 — Install locally for debugging
 
-While testing or developing, copy the freshly built shared module into an
-explicit development engine directory. This avoids `sudo` and does not require
-reconfiguring the build with a custom prefix.
+While testing or developing, point the host at the Meson build directory. This
+avoids `sudo` and does not require reconfiguring the build with a custom prefix.
 
 ```sh
-mkdir -p build/engines
-cp build/libtypio_engine_rime.so build/engines/
-typio --engine-dir "$PWD/build/engines" --list
+PATH="$PWD/build:$PATH" typio --engine-dir "$PWD/build" --list
 ```
 
 Packaged Typio hosts scan the system engine directory by default. Development
 engine directories must be enabled explicitly with `--engine-dir` or
-`TYPIO_ENGINE_DIR`.
+`TYPIO_ENGINE_PATH`.
 
 ### Rime configuration files
 
