@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`0` quiet, `1` notable) after `is_active`, preserving the engine's on-focus
   auto-reveal intent.
 
+### Fixed
+
+- Worker no longer crashes on shutdown once a session has been created. Teardown
+  now runs deactivate → free instance → free engine: deactivate joins librime's
+  async deployer and detaches its notification handler (so it can't race the
+  host freeing the instance — a double-free), and freeing the instance before
+  the engine lets each context's session destructor run while librime and the
+  engine state are still alive (previously a use-after-free / `destroy_session`
+  after `RimeFinalize`).
+
 ## [0.2.0] - 2026-06-06
 
 ### Changed

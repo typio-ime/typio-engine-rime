@@ -141,6 +141,25 @@ static TypioResult typio_rime_init(TypioEngine *engine, TypioInstance *instance)
     return TYPIO_OK;
 }
 
+/* Quiesce librime's background work before the host tears anything down.
+ *
+ * Deployment runs on a librime-owned thread that calls back into
+ * typio_rime_notification → typio_instance_notify_engine_availability. If that
+ * fires while the host is freeing the instance, two threads race the instance
+ * state (double-free). Detaching the handler first makes any in-flight
+ * notification a no-op; joining the maintenance thread then guarantees no
+ * librime thread is live when the host frees contexts/state. Idempotent. */
+static void typio_rime_deactivate(TypioEngine *engine) {
+    TypioRimeState *state = typio_engine_get_user_data(engine);
+
+    if (!state || !state->api) {
+        return;
+    }
+
+    state->api->set_notification_handler(nullptr, nullptr);
+    state->api->join_maintenance_thread();
+}
+
 static void typio_rime_destroy(TypioEngine *engine) {
     TypioRimeState *state = typio_engine_get_user_data(engine);
 
@@ -367,7 +386,7 @@ static const TypioEngineInfo typio_rime_engine_info = {
 static const TypioEngineBaseOps typio_rime_base_ops = {
     .init = typio_rime_init,
     .destroy = typio_rime_destroy,
-    .deactivate = nullptr,
+    .deactivate = typio_rime_deactivate,
     .focus_in = typio_rime_focus_in,
     .focus_out = typio_rime_focus_out,
     .reset = typio_rime_reset,

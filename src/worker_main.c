@@ -221,13 +221,28 @@ static bool worker_init(Worker *worker) {
 }
 
 static void worker_destroy(Worker *worker) {
-    if (worker->base) {
-        typio_engine_free(worker->base);
-        worker->base = NULL;
+    /* Teardown runs active → deactivated → destroyed.
+     *
+     * 1. deactivate(): let the engine stop any background work and detach its
+     *    callbacks while everything is still alive (e.g. Rime joins its async
+     *    deployer thread, so it can't notify into a half-freed instance).
+     * 2. free the instance: dropping its input contexts runs each context's
+     *    session destructor, which dereferences the still-live engine state.
+     * 3. free the engine: finalise the backend and release engine state.
+     *
+     * Freeing the engine before the instance would finalise the backend and
+     * free the state out from under the session destructors — a use-after-free
+     * crash on exit. */
+    if (worker->base && worker->base->base_ops->deactivate) {
+        worker->base->base_ops->deactivate(worker->base);
     }
     if (worker->instance) {
         typio_instance_free(worker->instance);
         worker->instance = NULL;
+    }
+    if (worker->base) {
+        typio_engine_free(worker->base);
+        worker->base = NULL;
     }
 }
 
