@@ -371,7 +371,7 @@ This design separates mandatory lifecycle operations from keyboard-specific call
 
 **Meson** (`typio-engine-rime/meson.build`):
 
-- Builds `typio-engine-rime` as a worker executable
+- Builds `typio-engine-rime` as an engine executable
 - Installs `typio-engine-rime.toml` to `<datadir>/typio/engines`
 - Discovers and links librime via `pkg-config`
 

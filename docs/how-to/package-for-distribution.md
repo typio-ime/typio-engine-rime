@@ -102,7 +102,7 @@ development metadata as `libcurl-devel` or `libcurl4-openssl-dev`.
 
 | Source | Destination | Description |
 |--------|-------------|-------------|
-| `typio-engine-rime` | `<libexecdir>/typio/engines/` | Private engine worker executable started by the host |
+| `typio-engine-rime` | `<libexecdir>/typio/engines/` | Private engine executable started by the host |
 | `typio-engine-rime.toml` | `<datadir>/typio/engines/` | Engine manifest discovered by the host at runtime |
 | `data/icons/hicolor/scalable/apps/typio-rime-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for Chinese input mode |
 | `data/icons/hicolor/scalable/apps/typio-rime-latin-symbolic.svg` | `<datadir>/icons/hicolor/scalable/apps/` | Symbolic icon for ASCII (Latin) input mode |

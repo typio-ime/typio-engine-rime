@@ -45,9 +45,9 @@ If you want to run the test suite later, enable tests during configuration:
 meson setup build -Dbuild_tests=true
 ```
 
-## Step 2 — Build the Worker
+## Step 2 — Build the Engine
 
-Compile the worker executable:
+Compile the engine executable:
 
 ```sh
 ninja -C build

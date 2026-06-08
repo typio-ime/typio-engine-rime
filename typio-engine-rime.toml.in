@@ -1,5 +1,6 @@
 name = "rime"
 type = "keyboard"
+protocol = "typio-engine-protocol"
 display_name = "Rime"
 description = "Chinese input engine powered by librime."
 author = "Typio"

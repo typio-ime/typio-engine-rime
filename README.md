@@ -57,12 +57,12 @@ meson setup build -Dbuild_tests=true
 meson test -C build
 ```
 
-The integration test starts the freshly built worker through the same
-host-loader path Typio uses, so it exercises the real IPC boundary.
+The integration test starts the freshly built engine executable through the same
+host-loader path Typio uses, so it exercises the real engine process boundary.
 It needs `librime` and the system `rime-data` package.
 
 ## ABI
 
-This engine targets the Typio worker protocol and links the libtypio engine
+This engine targets Typio Engine Protocol and links the libtypio engine
 ABI headers for engine-facing types and helper functions. Pre-1.0: rebuild
 against each libtypio release.
