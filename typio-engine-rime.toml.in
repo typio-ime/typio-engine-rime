@@ -6,6 +6,7 @@ description = "Chinese input engine powered by librime."
 author = "Typio"
 icon = "typio-rime-symbolic"
 language = "zh_CN"
+languages = ["zh-Hans", "zh-Hant"]
 command = "@ENGINE_COMMAND@"
 args = []
 required = ["preedit", "candidates"]
