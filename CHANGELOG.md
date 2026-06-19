@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-19
+
+### Changed
+
+- `worker_main.c` is now byte-identical to the shared harness used by the
+  other engine workers: the protocol hello engine_type is derived from
+  `TypioEngineInfo.type` instead of being hard-coded, and the safer
+  teardown comment is generalized (the librime-specific wording now lives
+  only in the commit message).
+
 ## [0.3.0] - 2026-06-13
 
 ### Added
