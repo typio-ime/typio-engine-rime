@@ -227,19 +227,19 @@ static bool worker_init(Worker *worker) {
     return true;
 }
 
+/* Teardown runs active → deactivated → destroyed.
+ *
+ * 1. deactivate(): let the engine stop any background work and detach its
+ *    callbacks while everything is still alive (e.g. an async deployer or
+ *    model-loading thread can't notify into a half-freed instance).
+ * 2. free the instance: dropping its input contexts runs each context's
+ *    session destructor, which dereferences the still-live engine state.
+ * 3. free the engine: finalise the backend and release engine state.
+ *
+ * Freeing the engine before the instance would finalise the backend and
+ * free the state out from under the session destructors — a use-after-free
+ * crash on exit. */
 static void worker_destroy(Worker *worker) {
-    /* Teardown runs active → deactivated → destroyed.
-     *
-     * 1. deactivate(): let the engine stop any background work and detach its
-     *    callbacks while everything is still alive (e.g. Rime joins its async
-     *    deployer thread, so it can't notify into a half-freed instance).
-     * 2. free the instance: dropping its input contexts runs each context's
-     *    session destructor, which dereferences the still-live engine state.
-     * 3. free the engine: finalise the backend and release engine state.
-     *
-     * Freeing the engine before the instance would finalise the backend and
-     * free the state out from under the session destructors — a use-after-free
-     * crash on exit. */
     if (worker->base && worker->base->base_ops->deactivate) {
         worker->base->base_ops->deactivate(worker->base);
     }
@@ -538,9 +538,13 @@ int main(void) {
         return 1;
     }
 
+    const char *engine_type =
+        (worker.info && worker.info->type == TYPIO_ENGINE_TYPE_KEYBOARD)
+            ? "keyboard"
+            : "voice";
     if (!typio_engine_protocol_send_hello(protocol_fd,
-                                     worker.info ? worker.info->name : "rime",
-                                     "keyboard")) {
+                                     worker.info ? worker.info->name : "engine",
+                                     engine_type)) {
         worker_destroy(&worker);
         return 1;
     }
