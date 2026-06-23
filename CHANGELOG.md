@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-23
+
 ### Fixed
 
 - **Engine info language aligned with manifest.** `typio_rime_engine_info.language`
