@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Engine info language aligned with manifest.** `typio_rime_engine_info.language`
+  now reports `zh` to match the manifest's `language = "zh"` (was `zh_CN`, a
+  POSIX locale code rather than an IETF tag). Hosts read metadata from the
+  manifest, so this is cosmetic when queried via the C ABI, but keeps the two
+  sources of truth in agreement.
+
 ## [0.3.1] - 2026-06-19
 
 ### Changed
